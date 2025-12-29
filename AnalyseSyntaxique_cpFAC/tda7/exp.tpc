@@ -1,0 +1,5 @@
+/* exp.tpc */
+
+/* double value(double a, double b, double c, double x) ; */
+/* Résolution d'une équation du deuxième degré */
+    (-b+s)/(2*a)+distance(value(1,b,c,r1),value(1,b,c,r2))
