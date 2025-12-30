@@ -21,7 +21,6 @@ Node *root = NULL;
     Node *node;
 }
 
-/* Tokens Bison (Sans T_) */
 %token <num> NUM
 %token <ident> IDENT TYPE
 %token <character> CHARACTER
@@ -31,7 +30,8 @@ Node *root = NULL;
 
 %type <node> Prog DeclVars DeclFoncts DeclFonct EnTeteFonct Parametres ListTypVar
 %type <node> Corps SuiteInstr Instr Exp TB FB M E T F Arguments ListExp
-%type <node> DeclStruct TypeName LValue Declarateurs Globals ListDeclVars
+%type <node> DeclStruct TypeName LValue Declarateurs Globals
+%type <node> ListChampsNonVide DeclarationsLocales
 
 %%
 Prog:  Globals DeclFoncts
@@ -69,24 +69,54 @@ DeclVars:
        }
     ;
 
-ListDeclVars:
-       ListDeclVars DeclVars
+ListChampsNonVide:
+       ListChampsNonVide DeclVars
        {
            $$ = $1;
-           if ($$ == NULL) $$ = makeNode(T_LIST);
            addChild($$, $2);
        }
-    |{ $$ = NULL; }
+    |  DeclVars
+       {
+           $$ = makeNode(T_LIST);
+           addChild($$, $1);
+       }
     ;
 
+
 DeclStruct:
-       STRUCT IDENT '{' ListDeclVars '}' ';' 
+       STRUCT IDENT '{' ListChampsNonVide '}' ';'
        {
            $$ = makeNode(T_STRUCT_DECL);
            Node *nId = makeNode(T_IDENT); strcpy(nId->ident, $2);
            addChild($$, nId); 
            addChild($$, $4);  
        }
+    ;
+
+
+DeclarationsLocales:
+       DeclarationsLocales DeclVars
+       {
+           $$ = $1;
+           if ($$ == NULL) $$ = makeNode(T_LIST);
+           addChild($$, $2);
+       }
+    |  DeclarationsLocales DeclStruct
+       {
+           $$ = $1;
+           if ($$ == NULL) $$ = makeNode(T_LIST);
+           addChild($$, $2);
+       }
+    | { $$ = NULL; }
+    ;
+
+/* 4. Mise à jour du Corps pour utiliser DeclarationsLocales */
+Corps: '{' DeclarationsLocales SuiteInstr '}'
+    {
+        $$ = makeNode(T_BODY);
+        addChild($$, $2); /* Contient Var locales ET Struct locales */
+        addChild($$, $3);
+    }
     ;
 Declarateurs:
        Declarateurs ',' IDENT
@@ -190,13 +220,6 @@ ListTypVar:
        }
     ;
 
-Corps: '{' ListDeclVars SuiteInstr '}'
-    {
-        $$ = makeNode(T_BODY);
-        addChild($$, $2); /* Var locales */
-        addChild($$, $3); /* Instructions */
-    }
-    ;
 
 SuiteInstr:
        SuiteInstr Instr

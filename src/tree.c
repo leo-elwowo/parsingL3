@@ -45,13 +45,14 @@ Node *makeNode(label_t label) {
   Node *node = malloc(sizeof(Node));
   if (!node) {
     printf("Run out of memory\n");
-    nberror++;
+    nberror++; //POUR en gros augmenter le nb d'erreurs quand c'est à plus que 1
     exit(1);
   }
   node->label = label;
   node-> firstChild = node->nextSibling = NULL;
   node->lineno=lineno;
-
+  /*selon le type de chose que c'est dans l'union, on a différents types
+  de données stockées*/
   node->num = 0;
   node->byte = 0;
   node->character = 0;
@@ -101,6 +102,8 @@ void printTree(Node *node) {
 
   printf("%s", StringFromLabel[node->label]);
   switch(node->label) {
+    /*on affiche la bonne donnée selon le type du label (les autres champs sont
+    pas initialisés, pas besoin grâce à ca, on peut afficher les attributs)*/
       case T_IDENT:
       case T_TYPE:
           printf(": %s", node->ident); 
