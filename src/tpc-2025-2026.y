@@ -28,9 +28,32 @@ Node *root = NULL;
 %token <comp> EQ ORDER
 %token IF ELSE WHILE RETURN STRUCT TYPE VOID AND OR
 
+%type <node> Prog DeclVars DeclFoncts DeclFonct EnTeteFonct Parametres ListTypVar
+%type <node> Corps SuiteInstr Instr Exp TB FB M E T F Arguments ListExp
+%type <node> DeclStructs DeclStruct TypeName LValue
 
 %%
-Prog:  DeclVars DeclFoncts
+Prog:  DeclStructs DeclVars DeclFoncts
+    ;
+DeclStructs:
+        DeclStructs DeclStruct 
+        { 
+           $$ = $1; 
+           if ($$ == NULL) $$ = makeNode(LIST); /* Création liste si vide */
+           addChild($$, $2); 
+        }
+    |  { $$ = NULL; }
+    ;
+
+DeclStruct:
+       STRUCT IDENT '{' DeclVars '}' ';'
+       {
+           $$ = makeNode(STRUCT_DECL);
+           /* On stocke le nom de la struct dans le noeud STRUCT_DECL ou un fils */
+           Node *nId = makeNode(IDENT); strcpy(nId->ident, $2);
+           addChild($$, nId);
+           addChild($$, $4); /* Les champs */
+       }
     ;
 DeclVars:
        DeclVars TYPE Declarateurs ';'

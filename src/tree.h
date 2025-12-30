@@ -5,8 +5,10 @@ typedef enum {
   PROG, 
   DECL_VARS, 
   DECL_FONCTS,
-  FUNC, HEADER, 
-  BODY, PARAM,
+  FUNC, 
+  HEADER, 
+  BODY, 
+  PARAM,
   INSTR_LIST, 
   IF, 
   WHILE, 
@@ -37,6 +39,11 @@ typedef struct Node {
   label_t label;
   int lineno;
   struct Node *firstChild, *nextSibling;
+  char ident[64];
+  int num; 
+  char byte;
+  char character;
+  char comp[4];
 } Node;
 
 Node *makeNode(label_t label);
