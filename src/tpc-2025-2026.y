@@ -1,3 +1,15 @@
+%{
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "tree.h"
+
+int yylex();
+void yyerror(const char *s);
+extern int lineno;
+
+
+%}
 %%
 Prog:  DeclVars DeclFoncts
     ;
