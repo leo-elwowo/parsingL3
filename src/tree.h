@@ -1,4 +1,4 @@
-/* tree.h */
+
 #ifndef TREE
 #define TREE
 typedef enum {

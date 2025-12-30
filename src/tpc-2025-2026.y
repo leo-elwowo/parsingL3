@@ -370,10 +370,10 @@ int main(int argc, char **argv) {
     int print = 0;
     if (argc > 1 && (strcmp(argv[1], "-t") == 0 || strcmp(argv[1], "--tree") == 0)) print = 1;
     if (yyparse() == 0) {
-        if (print && root != NULL) {
-            printTree(root);
-        }
         return 0;
     }
+    if (print && root != NULL) {
+            printTree(root);
+        }
     return 1;
 }

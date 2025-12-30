@@ -70,6 +70,7 @@ void          {return VOID;}
 
 {BLANCS} ;
 \n {lineno++;}
+. {return 1;}
 <*><<EOF>> {printf("\n"); return 0;}
 
 %%
