@@ -1,26 +1,32 @@
 CC = gcc
-CFLAGS = -Wall -g -Iobj -Isrc
-PARSER = tpc-2025-2026
-LEXER = projlexer
+CFLAGS = -Wall -g -Iobj -Isrc 
 
-bin/tpcas: obj/$(LEXER).o obj/$(PARSER).o obj/tree.o obj/module1.o # ...
-	$(CC) -o $@ $^
+LDFLAGS = -lfl 
+
+PARSER = tpc-2025-2026
+LEXER = projlexic
+
+bin/tpcas: obj/lex.yy.o obj/$(PARSER).tab.o obj/tree.o
+	mkdir -p bin
+	$(CC) -o $@ $^ $(LDFLAGS)
 
 obj/tree.o: src/tree.c src/tree.h
-obj/module1.o: src/module1.c src/module1.h src/tree.h
-
-obj/$(PARSER).o: obj/$(PARSER).c src/tree.h src/module2.h
-obj/$(LEXER).o: obj/$(LEXER).c obj/$(PARSER).h
-# ...
-
-obj/%.o: src/%.c
+	mkdir -p obj
 	$(CC) -c -o $@ $< $(CFLAGS)
 
-obj/$(LEXER).c: src/$(LEXER).l obj/$(PARSER).h
+obj/$(PARSER).tab.c obj/$(PARSER).tab.h: src/$(PARSER).y
+	mkdir -p obj
+	bison -d -o obj/$(PARSER).tab.c $<
+
+obj/$(PARSER).tab.o: obj/$(PARSER).tab.c src/tree.h
+	$(CC) -c -o $@ $< $(CFLAGS)
+
+obj/lex.yy.c: src/$(LEXER).lex obj/$(PARSER).tab.h
+	mkdir -p obj
 	flex -o $@ $<
 
-obj/$(PARSER).c obj/$(PARSER).h &: src/$(PARSER).y
-	bison -d -o obj/$(PARSER).c $<
+obj/lex.yy.o: obj/lex.yy.c
+	$(CC) -c -o $@ $< $(CFLAGS)
 
 clean:
 	rm -rf obj bin
