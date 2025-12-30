@@ -7,6 +7,7 @@
 int yylex();
 void yyerror(const char *s);
 extern int lineno;
+int nberror = 0;
 
 Node *root = NULL;
 %}
@@ -30,53 +31,63 @@ Node *root = NULL;
 
 %type <node> Prog DeclVars DeclFoncts DeclFonct EnTeteFonct Parametres ListTypVar
 %type <node> Corps SuiteInstr Instr Exp TB FB M E T F Arguments ListExp
-%type <node> DeclStructs DeclStruct TypeName LValue Declarateurs
+%type <node> DeclStruct TypeName LValue Declarateurs Globals ListDeclVars
 
 %%
-Prog:  DeclStructs DeclVars DeclFoncts
+Prog:  Globals DeclFoncts
     {
         root = makeNode(T_PROG);
         addChild(root, $1);
         addChild(root, $2);
-        addChild(root, $3); 
     }
     ;
 
-DeclStructs:
-        DeclStructs DeclStruct 
-        { 
+Globals:
+       Globals DeclStruct 
+       { 
            $$ = $1;
            if ($$ == NULL) $$ = makeNode(T_LIST);
            addChild($$, $2); 
-        }
-    |  { $$ = NULL; }
-    ;
-
-DeclStruct:
-       STRUCT IDENT '{' DeclVars '}' ';'
-       {
-           $$ = makeNode(T_STRUCT_DECL);
-           Node *nId = makeNode(T_IDENT); strcpy(nId->ident, $2);
-           addChild($$, nId);
-           addChild($$, $4); 
        }
+    |  Globals DeclVars
+       {
+           $$ = $1;
+           if ($$ == NULL) $$ = makeNode(T_LIST);
+           addChild($$, $2);
+       }
+    |   {$$ = NULL;}
     ;
 
 DeclVars:
-       DeclVars TypeName Declarateurs ';'
+       TypeName Declarateurs ';'
        {
-           $$ = $1;
-           if ($$ == NULL) $$ = makeNode(T_DECL_VARS);
-        
+           $$ = makeNode(T_DECL_VARS);
            Node *groupe = makeNode(T_LIST);
+           addChild(groupe, $1);
            addChild(groupe, $2);
-           addChild(groupe, $3);
-           
            addChild($$, groupe);
        }
-    | { $$ = NULL; }
     ;
 
+ListDeclVars:
+       ListDeclVars DeclVars
+       {
+           $$ = $1;
+           if ($$ == NULL) $$ = makeNode(T_LIST);
+           addChild($$, $2);
+       }
+    |{ $$ = NULL; }
+    ;
+
+DeclStruct:
+       STRUCT IDENT '{' ListDeclVars '}' ';' 
+       {
+           $$ = makeNode(T_STRUCT_DECL);
+           Node *nId = makeNode(T_IDENT); strcpy(nId->ident, $2);
+           addChild($$, nId); 
+           addChild($$, $4);  
+       }
+    ;
 Declarateurs:
        Declarateurs ',' IDENT
        {
@@ -84,14 +95,13 @@ Declarateurs:
            Node *id = makeNode(T_IDENT); strcpy(id->ident, $3);
            addChild($$, id);
        }
-    |
-       IDENT
-    {
-        $$ = makeNode(T_LIST); 
-        Node *id = makeNode(T_IDENT);
-        strcpy(id->ident, $1);
-        addChild($$, id);
-    }
+    |  IDENT
+       {
+           $$ = makeNode(T_LIST); 
+           Node *id = makeNode(T_IDENT);
+           strcpy(id->ident, $1);
+           addChild($$, id);
+       }
     ;
 
 TypeName:
@@ -156,6 +166,7 @@ EnTeteFonct:
 Parametres:
        VOID { $$ = NULL; }
     |  ListTypVar { $$ = $1; }
+    |  { $$ = NULL; } 
     ;
 
 ListTypVar:
@@ -179,11 +190,11 @@ ListTypVar:
        }
     ;
 
-Corps: '{' DeclVars SuiteInstr '}'
+Corps: '{' ListDeclVars SuiteInstr '}'
     {
         $$ = makeNode(T_BODY);
-        addChild($$, $2); 
-        addChild($$, $3);
+        addChild($$, $2); /* Var locales */
+        addChild($$, $3); /* Instructions */
     }
     ;
 
@@ -369,11 +380,16 @@ void yyerror(const char *s) {
 int main(int argc, char **argv) {
     int print = 0;
     if (argc > 1 && (strcmp(argv[1], "-t") == 0 || strcmp(argv[1], "--tree") == 0)) print = 1;
-    if (yyparse() == 0) {
+    if (argc > 1 && (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0)){
+        printf("Utiliser l'analyseur syntaxique : \n\t ./tpcas [options] < fichier.tpc\n\n\tLes options sont : \n\t\t-h / --help : afficher cette aide\n\t\t-t / --tree : afficher l'arbre abstrait généré par Bison\n\n");
         return 0;
     }
-    if (print && root != NULL) {
+    if (yyparse() == 0) {
+        /*si ya pas de problèmes !!!!*/
+        if (print && root != NULL) {
             printTree(root);
         }
-    return 1;
+        return 0;
+    }
+    return 1 + nberror;
 }

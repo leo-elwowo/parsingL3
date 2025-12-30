@@ -1,0 +1,14 @@
+struct Point {
+    int x, y;
+};
+
+struct Rect {
+    struct Point p1;
+    struct Point p2;
+};
+
+int main(void) {
+    struct Rect r;
+    r.p1.x = 0;
+    return 0;
+}

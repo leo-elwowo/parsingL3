@@ -26,6 +26,7 @@ typedef enum {
   T_NUM, 
   T_CHARACTER, 
   T_TYPE,
+  T_TAB,
   T_STRUCT_DECL, 
   T_MEMBER_ACCESS, 
   T_TYPE_STRUCT,

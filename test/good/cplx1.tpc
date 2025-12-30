@@ -1,0 +1,52 @@
+/* test_complex_struct.tpc */
+
+struct Color {
+    int r, g, b;
+};
+
+int global_intensity;
+
+struct Pixel {
+    struct Color info;
+    int x, y;
+};
+
+struct Screen {
+    struct Pixel p1;
+    struct Pixel p2;
+    int width, height;
+};
+
+/* Fonction qui manipule des entiers issus de structures */
+int check_pixel(int r, int g, int b) {
+    if (r > 255 || g > 255 || b > 255) {
+        return 0;
+    }
+    return 1;
+}
+
+int main(void) {
+    struct Screen my_screen;
+    int valid;
+
+    /* Accès très profond (3 niveaux) */
+    my_screen.p1.info.r = 255;
+    my_screen.p1.info.g = 0;
+    my_screen.p1.info.b = 0;
+    
+    my_screen.p1.x = 10;
+    my_screen.p1.y = 20;
+
+    /* Utilisation dans des expressions complexes */
+    my_screen.p2.info.r = my_screen.p1.info.r - 50;
+    
+    /* Appel de fonction avec des membres de structure */
+    valid = check_pixel(my_screen.p1.info.r, my_screen.p1.info.g, my_screen.p1.info.b);
+    
+    if (valid == 1) {
+        return my_screen.p1.x;
+    }
+    
+    return 0;
+}
+/*IA !!!!! OKKK !!!!*/

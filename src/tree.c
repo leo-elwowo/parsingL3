@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include "tree.h"
 extern int lineno;       /* from lexer */
-
+extern int nberror;
 static const char *StringFromLabel[] = {
   "PROG", 
   "DECL_VARS", 
@@ -30,10 +30,12 @@ static const char *StringFromLabel[] = {
   "NUM", 
   "CHARACTER", 
   "TYPE",
+  "TAB",
   "STRUCT_DECL", 
   "MEMBER_ACCESS", 
   "TYPE_STRUCT",
-  "LIST"
+  "LIST",
+  "VOID"
   /* list all other node labels, if any */
   /* The list must coincide with the label_t enum in tree.h */
   /* To avoid listing them twice, see https://stackoverflow.com/a/10966395 */
@@ -43,6 +45,7 @@ Node *makeNode(label_t label) {
   Node *node = malloc(sizeof(Node));
   if (!node) {
     printf("Run out of memory\n");
+    nberror++;
     exit(1);
   }
   node->label = label;
