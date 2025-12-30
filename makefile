@@ -1,7 +1,7 @@
 CC = gcc
 CFLAGS = -Wall -g -Iobj -Isrc
-PARSER = le_parser
-LEXER = le_lexer
+PARSER = tpc-2025-2026
+LEXER = projlexer
 
 bin/tpcas: obj/$(LEXER).o obj/$(PARSER).o obj/tree.o obj/module1.o # ...
 	$(CC) -o $@ $^
@@ -21,3 +21,6 @@ obj/$(LEXER).c: src/$(LEXER).l obj/$(PARSER).h
 
 obj/$(PARSER).c obj/$(PARSER).h &: src/$(PARSER).y
 	bison -d -o obj/$(PARSER).c $<
+
+clean:
+	rm -rf obj bin
