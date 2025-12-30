@@ -21,7 +21,7 @@ BLANCS [ \t]+
 <COMM>\n {lineno++;}
 <COMM>\*\/ {BEGIN INITIAL;}
 
-\/\/.*\n ;
+\/\/.* ;
 
 if            {return IF;}
 else          {return ELSE;}
@@ -46,8 +46,8 @@ void          {return VOID;}
         fprintf(stderr, "detecte divstar %s\n", yytext);
         return DIVSTAR; }
 
-\'\\n\'         { yylval.character = '\n'; return CHARACTER; }
-\'\\t\'         { yylval.character = '\t'; return CHARACTER; }
+\'\\n\'         {yylval.character = '\n'; return CHARACTER;}
+\'\\t\'         {yylval.character = '\t'; return CHARACTER;}
 \'.\' {
     yylval.character = yytext[1];
     return CHARACTER;
@@ -71,7 +71,7 @@ void          {return VOID;}
         strcpy(yylval.comp, yytext) ;
         fprintf(stderr, "detecte order %s\n", yytext);
         return ORDER;}
-[!;,\(\)\{\}] {
+[!;,\(\)\{\}\[\]\.=] {
         fprintf(stderr, "detecte char %s\n", yytext);
         return yytext[0];
 }
