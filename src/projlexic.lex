@@ -45,6 +45,14 @@ void          {return VOID;}
         yylval.byte = yytext[0];
         fprintf(stderr, "detecte divstar %s\n", yytext);
         return DIVSTAR; }
+
+\'\\n\'         { yylval.character = '\n'; return CHARACTER; }
+\'\\t\'         { yylval.character = '\t'; return CHARACTER; }
+\'.\' {
+    yylval.character = yytext[1];
+    return CHARACTER;
+}
+
 [0-9]+ {
         yylval.num =atoi(yytext);
         fprintf(stderr, "detecte num %s\n", yytext);
