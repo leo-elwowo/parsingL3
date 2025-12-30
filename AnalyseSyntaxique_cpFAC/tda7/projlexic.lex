@@ -8,17 +8,35 @@ int lineno = 1;
 
 %option nounput
 %option noinput
+
 IDENT [a-zA-Z_][a-zA-Z_0-9]*
-BLANCS [ \n\t]*
+BLANCS [ \t]+
+
 %x COMM
+
 %%
+
 \/\* {BEGIN COMM;} 
+<COMM>. ;
+<COMM>\n {lineno++;}
+<COMM>\*\/ {BEGIN INITIAL;}
+
 \/\/.*\n ;
-{BLANCS} ;
+
+if            {return IF;}
+else          {return ELSE;}
+while         {return WHILE;}
+return        {return RETURN;}
+struct        {return STRUCT;} 
+int           {return TYPE;}  
+char          {return TYPE;} 
+void          {return VOID;}
+
 {IDENT} {
         strcpy(yylval.ident, yytext) ;
         fprintf(stderr, "detecte ident %s\n", yytext);
         return IDENT; }
+
 [+-] {
         yylval.byte = yytext[0];
         fprintf(stderr, "detecte addsub %s\n", yytext);
@@ -49,7 +67,9 @@ BLANCS [ \n\t]*
         fprintf(stderr, "detecte char %s\n", yytext);
         return yytext[0];
 }
+
+{BLANCS} ;
+\n {lineno++;}
 <*><<EOF>> {printf("\n"); return 0;}
-<COMM>.|\n ;
-<COMM>\*\/ {BEGIN INITIAL;}
+
 %%

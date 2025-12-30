@@ -7,7 +7,7 @@
 CC=gcc
 CFLAGS=-Wall
 LDFLAGS=-Wall -lfl -ly
-FLEX=lexic
+FLEX=projlexic
 BISON=exp-tpc
 EXEC=analyseur
 
