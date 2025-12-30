@@ -22,11 +22,11 @@ Node *root = NULL;
 
 /* Tokens Bison (Sans T_) */
 %token <num> NUM
-%token <ident> IDENT
+%token <ident> IDENT TYPE
 %token <character> CHARACTER
 %token <byte> ADDSUB DIVSTAR
 %token <comp> EQ ORDER
-%token IF ELSE WHILE RETURN STRUCT TYPE VOID AND OR
+%token IF ELSE WHILE RETURN STRUCT VOID AND OR
 
 %type <node> Prog DeclVars DeclFoncts DeclFonct EnTeteFonct Parametres ListTypVar
 %type <node> Corps SuiteInstr Instr Exp TB FB M E T F Arguments ListExp
@@ -98,8 +98,7 @@ TypeName:
        TYPE 
        { 
            $$ = makeNode(T_TYPE);
-           /* Si Flex renvoie "int"/"char" dans yylval.ident, on le copie : */
-           /* strcpy($$->ident, $1); */
+           strcpy($$->ident, $1);
        }
     |  STRUCT IDENT
        {
