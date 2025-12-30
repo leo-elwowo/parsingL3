@@ -1,5 +1,6 @@
 %{
 //exercice 1
+#include "tree.h"
 #include "tpc-2025-2026.tab.h"
 #include <string.h>
 

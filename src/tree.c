@@ -98,22 +98,22 @@ void printTree(Node *node) {
 
   printf("%s", StringFromLabel[node->label]);
   switch(node->label) {
-      case IDENT:
-      case TYPE:
+      case T_IDENT:
+      case T_TYPE:
           printf(": %s", node->ident); 
           break;
-      case NUM:
+      case T_NUM:
           printf(": %d", node->num);
           break;
-      case CHARACTER:
+      case T_CHARACTER:
           printf(": '%c'", node->character);
           break;
-      case ADDSUB:
-      case DIVSTAR:
+      case T_ADDSUB:
+      case T_DIVSTAR:
           printf(": %c", node->byte);
           break;
-      case EQ:
-      case ORDER:
+      case T_EQ:
+      case T_ORDER:
           printf(": %s", node->comp);
           break;
       default:
