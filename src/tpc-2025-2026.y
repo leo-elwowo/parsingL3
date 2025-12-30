@@ -8,8 +8,27 @@ int yylex();
 void yyerror(const char *s);
 extern int lineno;
 
+Node *root = NULL;
 
 %}
+
+%union {
+    int num;
+    char ident[64];
+    char byte;
+    char character;
+    char comp[4];
+    Node *node;
+}
+
+%token <num> NUM
+%token <ident> IDENT
+%token <character> CHARACTER
+%token <byte> ADDSUB DIVSTAR
+%token <comp> EQ ORDER
+%token IF ELSE WHILE RETURN STRUCT TYPE VOID AND OR
+
+
 %%
 Prog:  DeclVars DeclFoncts
     ;
