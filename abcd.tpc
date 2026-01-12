@@ -1,0 +1,38 @@
+struct Point {
+    int x, y;
+};
+
+struct Rect {
+    struct Point p1;
+    struct Point p2;
+};
+
+/* 2. Variables globales */
+int global_res;
+struct Rect mon_rect;
+
+/* 3. Fonction simple */
+int addition(int a, int b) {
+    return a + b;
+}
+
+/* 4. Fonction principale */
+int main(void) {
+    int i;
+    
+    /* Test affectation structure */
+    mon_rect.p1.x = 10;
+    mon_rect.p1.y = 20;
+    
+    i = 0;
+    while (i < 5) {
+        mon_rect.p1.x = addition(mon_rect.p1.x, 1);
+        i = i + 1;
+    }
+    
+    if (mon_rect.p1.x > 12) {
+        return 1;
+    } else {
+        return 0;
+    }
+}

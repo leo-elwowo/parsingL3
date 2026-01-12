@@ -34,7 +34,7 @@ Node *root = NULL;
 %type <node> ListChampsNonVide DeclarationsLocales
 
 %%
-Prog:  Globals DeclFoncts
+Prog:  Globals DeclFonctsS
     {
         root = makeNode(T_PROG);
         addChild(root, $1);
