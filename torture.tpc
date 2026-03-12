@@ -1,9 +1,0 @@
-/* torture.tpc */
-int tab[10];
-
-int main() {         /* Test 1 : Parenthèses vides */
-    int i;
-    i = 0;
-    tab[i] = -5;     /* Test 2 : Tableau + Négatif */
-    return tab[0];
-}

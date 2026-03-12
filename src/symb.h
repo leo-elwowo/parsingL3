@@ -1,0 +1,27 @@
+#ifndef SYMBOLS
+#define SYMBOLS
+#include "identsize.h"
+#define N 1008
+
+typedef enum _type{
+    TYPE_INT,
+    TYPE_CHAR
+} Type;
+
+typedef struct _symb{
+    char ident[MAX_IDENTSIZE];
+    Type type;
+}Symbol;
+
+typedef struct _bucket{
+    Symbol * val;
+    struct _bucket * prochain;
+}Node, *Bucket;
+
+typedef struct _hashtab{
+    Bucket * elt[N];
+    int size;
+    int cap;
+}HashTable;
+
+#endif
