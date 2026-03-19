@@ -18,7 +18,12 @@ typedef struct _bucket{
     struct _bucket * prochain;
 }Node, *Bucket;
 
+
+
 typedef struct _hashtab{
+    /*
+    on rajoutera une fonction plus tard pour en faire une table de hashage 
+    */
     Bucket * elt[N];
     int size;
     int cap;
