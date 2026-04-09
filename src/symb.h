@@ -24,8 +24,9 @@ typedef struct _bucket{
 typedef struct _hashtab{
     /*
     on rajoutera une fonction plus tard pour en faire une table de hashage 
+    edit : c'est fait
     */
-    Bucket * elt[N];
+    Bucket elt[N];
     int size;
     int cap;
 }HashTable;

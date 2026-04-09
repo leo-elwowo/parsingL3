@@ -11,14 +11,6 @@ int init_symbol(Symbol ** sym, const char * ident, Type type){
     return 0;
 }
 
-int init_bucket(Bucket * bucket, Symbol * sym){
-    *bucket = (Bucket)malloc(sizeof(Node));
-    if (!(*bucket)) return 1;
-    (*bucket)->val = sym;
-    (*bucket)->prochain = NULL;
-    return 0;
-}
-
 unsigned int hfunc(const char * ident){
     unsigned long long h = 0;   //il faut que h puisse etre tres tres grand
                                 //parce qu'on multiplie par K a chaque caractère
@@ -30,19 +22,11 @@ unsigned int hfunc(const char * ident){
 }
 
 int insert_on_bucket_head(Bucket * bucket, Symbol * sym){
-    if (!bucket){
-        int rt = init_bucket(bucket, sym);
-        if (rt == 1) return 1;
-        return 2; 
-        /*
-        on renvoit 2 dans le cas spécial ou l'on insère la première valeur d'un
-        des buckets.
-        */
-    }
+
     Bucket tmp = (Bucket)malloc(sizeof(Node));
     if (!tmp) return 1;
     tmp->val = sym;
-    tmp->prochain = bucket;
+    tmp->prochain = *bucket;
     *bucket = tmp;
     return 0;
 }
@@ -52,6 +36,9 @@ int init_table(HashTable ** tab){
     if (!(*tab)) return 1;
     (*tab)->size = 0;
     (*tab)->cap = N;
+    for(int i = 0; i < N; i++){
+        (*tab)->elt[i] = NULL;
+    }
     return 0;
 }
 
