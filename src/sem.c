@@ -10,7 +10,6 @@ int current_offset = 0;
 
 void sem(Node *node) {
     if (node == NULL) return;
-
     switch (node->label) {
         case T_PROG:
             init_table(&global_table);
@@ -20,18 +19,12 @@ void sem(Node *node) {
             init_table(&local_table);
             current_offset = 0; 
             break;
-
         case T_DECL_VARS: {
 
             Node *type_node = node->firstChild;
             if (type_node == NULL || type_node->label != T_TYPE) break;
-
-
             Type current_type = TYPE_INT; // Par defaut
-
-
             HashTable *target_table = (local_table != NULL) ? local_table : global_table;
-
             Node *var_node = type_node->nextSibling;
             while (var_node != NULL) {
                 if (var_node->label == T_IDENT) {
@@ -46,7 +39,6 @@ void sem(Node *node) {
         case T_PARAM: {
             Node *type_node = node->firstChild;
             Node *var_node = type_node != NULL ? type_node->nextSibling : NULL;
-        
             if (var_node != NULL && var_node->label == T_IDENT) {
                 insert_value(var_node->ident, TYPE_INT, current_offset, local_table);
                 current_offset -= 8;
@@ -72,7 +64,7 @@ void sem(Node *node) {
 
     if (node->label != T_DECL_VARS && node->label != T_PARAM) {
         for (Node *child = node->firstChild; child != NULL; child = child->nextSibling) {
-            analyze_semantics(child);
+            sem(child);
         }
     }
 

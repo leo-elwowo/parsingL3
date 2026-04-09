@@ -4,6 +4,7 @@
 #include <string.h>
 #include "tree.h"
 #include "identsize.h"
+#include "sem.h"
 
 int yylex();
 void yyerror(const char *s);
@@ -415,6 +416,7 @@ int main(int argc, char **argv) {
     }
     if (yyparse() == 0) {
         /*si ya pas de problèmes !!!!*/
+        sem(tree);
         if (print && root != NULL) {
             printTree(root);
         }
