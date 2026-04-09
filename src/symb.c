@@ -3,16 +3,16 @@
 #include <string.h>
 #include <stdio.h>
 
-int init_symbol(Symbol ** sym, const char * ident, Type type){
+int init_symbol(Symbol ** sym, const char * ident, Type type, int deplct){
     *sym = (Symbol *)malloc(sizeof(Symbol));
     if (!(*sym)) return 1;
     strcpy((*sym)->ident, ident);
     (*sym)->type = type;
-    (*sym)->deplct = 0;//on verra plus tard mdr
+    (*sym)->deplct = deplct;//on verra plus tard mdr
     return 0;
 }
 
-unsigned int hfunc(const char * ident){
+static unsigned int hfunc(const char * ident){
     unsigned long long h = 0;   //il faut que h puisse etre tres tres grand
                                 //parce qu'on multiplie par K a chaque caractère
     for (int i = 0; ident[i] != '\0'; i++){
@@ -22,8 +22,13 @@ unsigned int hfunc(const char * ident){
     return rtrn;
 }
 
-int insert_on_bucket_head(Bucket * bucket, Symbol * sym){
+Symbol* search_value(const char * ident, HashTable * tab) {
+    if (tab == NULL) return NULL;
+    unsigned int hf_index = hfunc(ident);
+    return check_if_present_and_move_to_head_then(&tab->elt[hf_index], ident);
+}
 
+static int insert_on_bucket_head(Bucket * bucket, Symbol * sym){
     Bucket tmp = (Bucket)malloc(sizeof(SymNode));
     if (!tmp) return 1;
     tmp->val = sym;
@@ -43,7 +48,7 @@ int init_table(HashTable ** tab){
     return 0;
 }
 
-Symbol * check_if_present_and_move_to_head_then(Bucket * bucket, const char * ident){
+static Symbol * check_if_present_and_move_to_head_then(Bucket * bucket, const char * ident){
     //bucket pointer parce qu'on pourrait le remettre en tete l'ident
     Bucket prev = NULL;
     Bucket curr = *bucket;
@@ -66,7 +71,7 @@ Symbol * check_if_present_and_move_to_head_then(Bucket * bucket, const char * id
     return NULL; // Pas présent
 }
 
-void insert_value(const char * ident,const Type type, HashTable * tab){
+void insert_value(const char * ident,const Type type, int deplct, HashTable * tab){
     /*
     tant qu'on a pas programmé la table de hashage, on va juste prendre dans l'ordre
     avec un index
@@ -74,9 +79,9 @@ void insert_value(const char * ident,const Type type, HashTable * tab){
     */
     unsigned int hf_index = hfunc(ident);
     
-    if (check_if_present_and_move_to_head_then (tab->elt[hf_index], ident) == NULL){
+    if (check_if_present_and_move_to_head_then (&tab->elt[hf_index], ident) == NULL){
         Symbol * ajt = NULL;
-        init_symbol(&ajt, ident, type);
+        init_symbol(&ajt, ident, type, deplct);
         insert_on_bucket_head(&tab->elt[hf_index], ajt);
         tab->size++;
     }
@@ -101,9 +106,11 @@ void free_table(HashTable * tab){
     }
     free(tab);
 }
-
+/*
+admettons..
 int main(void){
     HashTable * table;
     init_table(&table);
     insert_value("abcd", TYPE_CHAR, table);
 }
+*/
