@@ -24,7 +24,7 @@ unsigned int hfunc(const char * ident){
 
 int insert_on_bucket_head(Bucket * bucket, Symbol * sym){
 
-    Bucket tmp = (Bucket)malloc(sizeof(Node));
+    Bucket tmp = (Bucket)malloc(sizeof(SymNode));
     if (!tmp) return 1;
     tmp->val = sym;
     tmp->prochain = *bucket;

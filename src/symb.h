@@ -18,7 +18,7 @@ typedef struct _symb{
 typedef struct _bucket{
     Symbol * val;
     struct _bucket * prochain;
-}Node, *Bucket;
+}SymNode, *Bucket;
 
 
 
