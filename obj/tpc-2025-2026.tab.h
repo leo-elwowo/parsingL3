@@ -78,7 +78,7 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 17 "src/tpc-2025-2026.y"
+#line 18 "src/tpc-2025-2026.y"
 
     int num;
     char ident[64];

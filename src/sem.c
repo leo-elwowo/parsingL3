@@ -7,6 +7,7 @@
 HashTable *global_table = NULL;
 HashTable *local_table = NULL;
 int current_offset = 0; 
+extern int printsymb;
 
 void sem(Node *node) {
     if (node == NULL) return;
@@ -110,5 +111,14 @@ void sem(Node *node) {
     if (node->label == T_FUNC) {
         // free_table(local_table); 
         // local_table = NULL;
+    }
+
+    if (printsymb) {
+        if (node->label == T_PROG) {
+            print_table(global_table, "Variables Globales");
+        }
+        if (node->label == T_FUNC) {
+            print_table(local_table, "Variables Locales (Fonction)");
+        }
     }
 }

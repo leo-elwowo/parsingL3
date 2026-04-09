@@ -10,6 +10,7 @@ int yylex();
 void yyerror(const char *s);
 extern int lineno;
 int nberror = 0;
+int printsymb = 0;
 
 Node *root = NULL;
 %}
@@ -410,6 +411,7 @@ int main(int argc, char **argv) {
         return 0;
     }
     if (argc > 1 && (strcmp(argv[1], "-t") == 0 || strcmp(argv[1], "--tree") == 0)) print = 1;
+    if (argc > 1 && (strcmp(argv[1], "-s") == 0 || strcmp(argv[1], "--tsym") == 0)) printsymb = 1;
     if (argc > 1 && (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0)){
         printf("Utiliser l'analyseur syntaxique : \n\t ./tpcas [options] < fichier.tpc\n\n\tLes options sont : \n\t\t-h / --help : afficher cette aide\n\t\t-t / --tree : afficher l'arbre abstrait généré par Bison\n\n");
         return 0;

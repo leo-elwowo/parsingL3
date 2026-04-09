@@ -38,4 +38,6 @@ Symbol* search_value(const char * ident, HashTable * tab);
 
 void free_table(HashTable * tab);
 
+void print_table(HashTable * tab, const char * table_name); //pour mon plaisir personnel miam
+
 #endif

@@ -80,10 +80,11 @@ int yylex();
 void yyerror(const char *s);
 extern int lineno;
 int nberror = 0;
+int printsymb = 0;
 
 Node *root = NULL;
 
-#line 87 "obj/tpc-2025-2026.tab.c"
+#line 88 "obj/tpc-2025-2026.tab.c"
 
 # ifndef YY_CAST
 #  ifdef __cplusplus
@@ -553,13 +554,13 @@ static const yytype_int8 yytranslate[] =
 /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_int16 yyrline[] =
 {
-       0,    39,    39,    48,    54,    60,    64,    75,    80,    89,
-     100,   106,   112,   116,   124,   130,   140,   145,   154,   161,
-     169,   178,   187,   199,   200,   201,   205,   214,   227,   233,
-     237,   243,   249,   257,   263,   270,   275,   277,   278,   282,
-     287,   296,   299,   302,   305,   308,   314,   317,   323,   326,
-     332,   335,   341,   344,   350,   355,   357,   362,   367,   369,
-     379,   381,   385,   392
+       0,    40,    40,    49,    55,    61,    65,    76,    81,    90,
+     101,   107,   113,   117,   125,   131,   141,   146,   155,   162,
+     170,   179,   188,   200,   201,   202,   206,   215,   228,   234,
+     238,   244,   250,   258,   264,   271,   276,   278,   279,   283,
+     288,   297,   300,   303,   306,   309,   315,   318,   324,   327,
+     333,   336,   342,   345,   351,   356,   358,   363,   368,   370,
+     380,   382,   386,   393
 };
 #endif
 
@@ -1200,43 +1201,43 @@ yyreduce:
   switch (yyn)
     {
   case 2: /* Prog: Globals DeclFoncts  */
-#line 40 "src/tpc-2025-2026.y"
+#line 41 "src/tpc-2025-2026.y"
     {
         root = makeNode(T_PROG);
         addChild(root, (yyvsp[-1].node));
         addChild(root, (yyvsp[0].node));
     }
-#line 1210 "obj/tpc-2025-2026.tab.c"
+#line 1211 "obj/tpc-2025-2026.tab.c"
     break;
 
   case 3: /* Globals: Globals DeclStruct  */
-#line 49 "src/tpc-2025-2026.y"
+#line 50 "src/tpc-2025-2026.y"
        { 
            (yyval.node) = (yyvsp[-1].node);
            if ((yyval.node) == NULL) (yyval.node) = makeNode(T_LIST);
            addChild((yyval.node), (yyvsp[0].node)); 
        }
-#line 1220 "obj/tpc-2025-2026.tab.c"
+#line 1221 "obj/tpc-2025-2026.tab.c"
     break;
 
   case 4: /* Globals: Globals DeclVars  */
-#line 55 "src/tpc-2025-2026.y"
+#line 56 "src/tpc-2025-2026.y"
        {
            (yyval.node) = (yyvsp[-1].node);
            if ((yyval.node) == NULL) (yyval.node) = makeNode(T_LIST);
            addChild((yyval.node), (yyvsp[0].node));
        }
-#line 1230 "obj/tpc-2025-2026.tab.c"
+#line 1231 "obj/tpc-2025-2026.tab.c"
     break;
 
   case 5: /* Globals: %empty  */
-#line 60 "src/tpc-2025-2026.y"
+#line 61 "src/tpc-2025-2026.y"
         {(yyval.node) = NULL;}
-#line 1236 "obj/tpc-2025-2026.tab.c"
+#line 1237 "obj/tpc-2025-2026.tab.c"
     break;
 
   case 6: /* DeclVars: TypeName Declarateurs ';'  */
-#line 65 "src/tpc-2025-2026.y"
+#line 66 "src/tpc-2025-2026.y"
        {
            (yyval.node) = makeNode(T_DECL_VARS);
            Node *groupe = makeNode(T_LIST);
@@ -1244,145 +1245,145 @@ yyreduce:
            addChild(groupe, (yyvsp[-1].node));
            addChild((yyval.node), groupe);
        }
-#line 1248 "obj/tpc-2025-2026.tab.c"
+#line 1249 "obj/tpc-2025-2026.tab.c"
     break;
 
   case 7: /* ListChampsNonVide: ListChampsNonVide DeclVars  */
-#line 76 "src/tpc-2025-2026.y"
+#line 77 "src/tpc-2025-2026.y"
        {
            (yyval.node) = (yyvsp[-1].node);
            addChild((yyval.node), (yyvsp[0].node));
        }
-#line 1257 "obj/tpc-2025-2026.tab.c"
+#line 1258 "obj/tpc-2025-2026.tab.c"
     break;
 
   case 8: /* ListChampsNonVide: DeclVars  */
-#line 81 "src/tpc-2025-2026.y"
+#line 82 "src/tpc-2025-2026.y"
        {
            (yyval.node) = makeNode(T_LIST);
            addChild((yyval.node), (yyvsp[0].node));
        }
-#line 1266 "obj/tpc-2025-2026.tab.c"
+#line 1267 "obj/tpc-2025-2026.tab.c"
     break;
 
   case 9: /* DeclStruct: STRUCT IDENT '{' ListChampsNonVide '}' ';'  */
-#line 90 "src/tpc-2025-2026.y"
+#line 91 "src/tpc-2025-2026.y"
        {
            (yyval.node) = makeNode(T_STRUCT_DECL);
            Node *nId = makeNode(T_IDENT); strcpy(nId->ident, (yyvsp[-4].ident));
            addChild((yyval.node), nId); 
            addChild((yyval.node), (yyvsp[-2].node));  
        }
-#line 1277 "obj/tpc-2025-2026.tab.c"
+#line 1278 "obj/tpc-2025-2026.tab.c"
     break;
 
   case 10: /* DeclarationsLocales: DeclarationsLocales DeclVars  */
-#line 101 "src/tpc-2025-2026.y"
+#line 102 "src/tpc-2025-2026.y"
        {
            (yyval.node) = (yyvsp[-1].node);
            if ((yyval.node) == NULL) (yyval.node) = makeNode(T_LIST);
            addChild((yyval.node), (yyvsp[0].node));
        }
-#line 1287 "obj/tpc-2025-2026.tab.c"
+#line 1288 "obj/tpc-2025-2026.tab.c"
     break;
 
   case 11: /* DeclarationsLocales: DeclarationsLocales DeclStruct  */
-#line 107 "src/tpc-2025-2026.y"
+#line 108 "src/tpc-2025-2026.y"
        {
            (yyval.node) = (yyvsp[-1].node);
            if ((yyval.node) == NULL) (yyval.node) = makeNode(T_LIST);
            addChild((yyval.node), (yyvsp[0].node));
        }
-#line 1297 "obj/tpc-2025-2026.tab.c"
+#line 1298 "obj/tpc-2025-2026.tab.c"
     break;
 
   case 12: /* DeclarationsLocales: %empty  */
-#line 112 "src/tpc-2025-2026.y"
+#line 113 "src/tpc-2025-2026.y"
       { (yyval.node) = NULL; }
-#line 1303 "obj/tpc-2025-2026.tab.c"
+#line 1304 "obj/tpc-2025-2026.tab.c"
     break;
 
   case 13: /* Corps: '{' DeclarationsLocales SuiteInstr '}'  */
-#line 117 "src/tpc-2025-2026.y"
+#line 118 "src/tpc-2025-2026.y"
     {
         (yyval.node) = makeNode(T_BODY);
         addChild((yyval.node), (yyvsp[-2].node)); /* Contient Var locales ET Struct locales */
         addChild((yyval.node), (yyvsp[-1].node));
     }
-#line 1313 "obj/tpc-2025-2026.tab.c"
+#line 1314 "obj/tpc-2025-2026.tab.c"
     break;
 
   case 14: /* Declarateurs: Declarateurs ',' IDENT  */
-#line 125 "src/tpc-2025-2026.y"
+#line 126 "src/tpc-2025-2026.y"
        {
            (yyval.node) = (yyvsp[-2].node);
            Node *id = makeNode(T_IDENT); strcpy(id->ident, (yyvsp[0].ident));
            addChild((yyval.node), id);
        }
-#line 1323 "obj/tpc-2025-2026.tab.c"
+#line 1324 "obj/tpc-2025-2026.tab.c"
     break;
 
   case 15: /* Declarateurs: IDENT  */
-#line 131 "src/tpc-2025-2026.y"
+#line 132 "src/tpc-2025-2026.y"
        {
            (yyval.node) = makeNode(T_LIST); 
            Node *id = makeNode(T_IDENT);
            strcpy(id->ident, (yyvsp[0].ident));
            addChild((yyval.node), id);
        }
-#line 1334 "obj/tpc-2025-2026.tab.c"
+#line 1335 "obj/tpc-2025-2026.tab.c"
     break;
 
   case 16: /* TypeName: TYPE  */
-#line 141 "src/tpc-2025-2026.y"
+#line 142 "src/tpc-2025-2026.y"
        { 
            (yyval.node) = makeNode(T_TYPE);
            strcpy((yyval.node)->ident, (yyvsp[0].ident));
        }
-#line 1343 "obj/tpc-2025-2026.tab.c"
+#line 1344 "obj/tpc-2025-2026.tab.c"
     break;
 
   case 17: /* TypeName: STRUCT IDENT  */
-#line 146 "src/tpc-2025-2026.y"
+#line 147 "src/tpc-2025-2026.y"
        {
            (yyval.node) = makeNode(T_TYPE_STRUCT);
            Node *id = makeNode(T_IDENT); strcpy(id->ident, (yyvsp[0].ident));
            addChild((yyval.node), id);
        }
-#line 1353 "obj/tpc-2025-2026.tab.c"
+#line 1354 "obj/tpc-2025-2026.tab.c"
     break;
 
   case 18: /* DeclFoncts: DeclFoncts DeclFonct  */
-#line 155 "src/tpc-2025-2026.y"
+#line 156 "src/tpc-2025-2026.y"
        {
            (yyval.node) = (yyvsp[-1].node);
            if ((yyval.node) == NULL) (yyval.node) = makeNode(T_DECL_FONCTS);
            addChild((yyval.node), (yyvsp[0].node));
        }
-#line 1363 "obj/tpc-2025-2026.tab.c"
+#line 1364 "obj/tpc-2025-2026.tab.c"
     break;
 
   case 19: /* DeclFoncts: DeclFonct  */
-#line 162 "src/tpc-2025-2026.y"
+#line 163 "src/tpc-2025-2026.y"
        {
            (yyval.node) = makeNode(T_DECL_FONCTS);
            addChild((yyval.node), (yyvsp[0].node));
        }
-#line 1372 "obj/tpc-2025-2026.tab.c"
+#line 1373 "obj/tpc-2025-2026.tab.c"
     break;
 
   case 20: /* DeclFonct: EnTeteFonct Corps  */
-#line 170 "src/tpc-2025-2026.y"
+#line 171 "src/tpc-2025-2026.y"
        {
            (yyval.node) = makeNode(T_FUNC);
            addChild((yyval.node), (yyvsp[-1].node));
            addChild((yyval.node), (yyvsp[0].node));
        }
-#line 1382 "obj/tpc-2025-2026.tab.c"
+#line 1383 "obj/tpc-2025-2026.tab.c"
     break;
 
   case 21: /* EnTeteFonct: TypeName IDENT '(' Parametres ')'  */
-#line 179 "src/tpc-2025-2026.y"
+#line 180 "src/tpc-2025-2026.y"
        {
            (yyval.node) = makeNode(T_HEADER);
            addChild((yyval.node), (yyvsp[-4].node)); 
@@ -1390,11 +1391,11 @@ yyreduce:
            addChild((yyval.node), id);
            addChild((yyval.node), (yyvsp[-1].node)); 
        }
-#line 1394 "obj/tpc-2025-2026.tab.c"
+#line 1395 "obj/tpc-2025-2026.tab.c"
     break;
 
   case 22: /* EnTeteFonct: VOID IDENT '(' Parametres ')'  */
-#line 188 "src/tpc-2025-2026.y"
+#line 189 "src/tpc-2025-2026.y"
        {
            (yyval.node) = makeNode(T_HEADER);
            Node *v = makeNode(T_TYPE); strcpy(v->ident, "void");
@@ -1403,29 +1404,29 @@ yyreduce:
            addChild((yyval.node), id);
            addChild((yyval.node), (yyvsp[-1].node));
        }
-#line 1407 "obj/tpc-2025-2026.tab.c"
+#line 1408 "obj/tpc-2025-2026.tab.c"
     break;
 
   case 23: /* Parametres: VOID  */
-#line 199 "src/tpc-2025-2026.y"
+#line 200 "src/tpc-2025-2026.y"
             { (yyval.node) = NULL; }
-#line 1413 "obj/tpc-2025-2026.tab.c"
+#line 1414 "obj/tpc-2025-2026.tab.c"
     break;
 
   case 24: /* Parametres: ListTypVar  */
-#line 200 "src/tpc-2025-2026.y"
+#line 201 "src/tpc-2025-2026.y"
                   { (yyval.node) = (yyvsp[0].node); }
-#line 1419 "obj/tpc-2025-2026.tab.c"
+#line 1420 "obj/tpc-2025-2026.tab.c"
     break;
 
   case 25: /* Parametres: %empty  */
-#line 201 "src/tpc-2025-2026.y"
+#line 202 "src/tpc-2025-2026.y"
        { (yyval.node) = NULL; }
-#line 1425 "obj/tpc-2025-2026.tab.c"
+#line 1426 "obj/tpc-2025-2026.tab.c"
     break;
 
   case 26: /* ListTypVar: ListTypVar ',' TypeName IDENT  */
-#line 206 "src/tpc-2025-2026.y"
+#line 207 "src/tpc-2025-2026.y"
        {
            (yyval.node) = (yyvsp[-3].node);
            Node *p = makeNode(T_PARAM);
@@ -1434,11 +1435,11 @@ yyreduce:
            addChild(p, id);
            addChild((yyval.node), p);
        }
-#line 1438 "obj/tpc-2025-2026.tab.c"
+#line 1439 "obj/tpc-2025-2026.tab.c"
     break;
 
   case 27: /* ListTypVar: TypeName IDENT  */
-#line 215 "src/tpc-2025-2026.y"
+#line 216 "src/tpc-2025-2026.y"
        {
            (yyval.node) = makeNode(T_LIST);
            Node *p = makeNode(T_PARAM);
@@ -1447,307 +1448,307 @@ yyreduce:
            addChild(p, id);
            addChild((yyval.node), p);
        }
-#line 1451 "obj/tpc-2025-2026.tab.c"
+#line 1452 "obj/tpc-2025-2026.tab.c"
     break;
 
   case 28: /* SuiteInstr: SuiteInstr Instr  */
-#line 228 "src/tpc-2025-2026.y"
+#line 229 "src/tpc-2025-2026.y"
        {
            (yyval.node) = (yyvsp[-1].node);
            if ((yyval.node) == NULL) (yyval.node) = makeNode(T_INSTR_LIST);
            addChild((yyval.node), (yyvsp[0].node));
        }
-#line 1461 "obj/tpc-2025-2026.tab.c"
+#line 1462 "obj/tpc-2025-2026.tab.c"
     break;
 
   case 29: /* SuiteInstr: %empty  */
-#line 233 "src/tpc-2025-2026.y"
+#line 234 "src/tpc-2025-2026.y"
        { (yyval.node) = NULL; }
-#line 1467 "obj/tpc-2025-2026.tab.c"
+#line 1468 "obj/tpc-2025-2026.tab.c"
     break;
 
   case 30: /* Instr: LValue '=' Exp ';'  */
-#line 238 "src/tpc-2025-2026.y"
+#line 239 "src/tpc-2025-2026.y"
        {
            (yyval.node) = makeNode(T_ASSIGN);
            addChild((yyval.node), (yyvsp[-3].node));
            addChild((yyval.node), (yyvsp[-1].node));
        }
-#line 1477 "obj/tpc-2025-2026.tab.c"
+#line 1478 "obj/tpc-2025-2026.tab.c"
     break;
 
   case 31: /* Instr: IF '(' Exp ')' Instr  */
-#line 244 "src/tpc-2025-2026.y"
+#line 245 "src/tpc-2025-2026.y"
        {
            (yyval.node) = makeNode(T_IF);
            addChild((yyval.node), (yyvsp[-2].node));
            addChild((yyval.node), (yyvsp[0].node));
        }
-#line 1487 "obj/tpc-2025-2026.tab.c"
+#line 1488 "obj/tpc-2025-2026.tab.c"
     break;
 
   case 32: /* Instr: IF '(' Exp ')' Instr ELSE Instr  */
-#line 250 "src/tpc-2025-2026.y"
+#line 251 "src/tpc-2025-2026.y"
        {
            (yyval.node) = makeNode(T_IF);
            addChild((yyval.node), (yyvsp[-4].node));
            addChild((yyval.node), (yyvsp[-2].node));
            addChild((yyval.node), (yyvsp[0].node));
        }
-#line 1498 "obj/tpc-2025-2026.tab.c"
+#line 1499 "obj/tpc-2025-2026.tab.c"
     break;
 
   case 33: /* Instr: WHILE '(' Exp ')' Instr  */
-#line 258 "src/tpc-2025-2026.y"
+#line 259 "src/tpc-2025-2026.y"
        {
            (yyval.node) = makeNode(T_WHILE);
            addChild((yyval.node), (yyvsp[-2].node));
            addChild((yyval.node), (yyvsp[0].node));
        }
-#line 1508 "obj/tpc-2025-2026.tab.c"
+#line 1509 "obj/tpc-2025-2026.tab.c"
     break;
 
   case 34: /* Instr: IDENT '(' Arguments ')' ';'  */
-#line 264 "src/tpc-2025-2026.y"
+#line 265 "src/tpc-2025-2026.y"
        {
            (yyval.node) = makeNode(T_FCALL);
            Node *id = makeNode(T_IDENT); strcpy(id->ident, (yyvsp[-4].ident));
            addChild((yyval.node), id);
            addChild((yyval.node), (yyvsp[-2].node));
        }
-#line 1519 "obj/tpc-2025-2026.tab.c"
+#line 1520 "obj/tpc-2025-2026.tab.c"
     break;
 
   case 35: /* Instr: RETURN Exp ';'  */
-#line 271 "src/tpc-2025-2026.y"
+#line 272 "src/tpc-2025-2026.y"
        {
            (yyval.node) = makeNode(T_RETURN);
            addChild((yyval.node), (yyvsp[-1].node));
        }
-#line 1528 "obj/tpc-2025-2026.tab.c"
+#line 1529 "obj/tpc-2025-2026.tab.c"
     break;
 
   case 36: /* Instr: RETURN ';'  */
-#line 275 "src/tpc-2025-2026.y"
+#line 276 "src/tpc-2025-2026.y"
                   { (yyval.node) = makeNode(T_RETURN); }
-#line 1534 "obj/tpc-2025-2026.tab.c"
+#line 1535 "obj/tpc-2025-2026.tab.c"
     break;
 
   case 37: /* Instr: '{' SuiteInstr '}'  */
-#line 277 "src/tpc-2025-2026.y"
+#line 278 "src/tpc-2025-2026.y"
                           { (yyval.node) = (yyvsp[-1].node); }
-#line 1540 "obj/tpc-2025-2026.tab.c"
+#line 1541 "obj/tpc-2025-2026.tab.c"
     break;
 
   case 38: /* Instr: ';'  */
-#line 278 "src/tpc-2025-2026.y"
+#line 279 "src/tpc-2025-2026.y"
            { (yyval.node) = NULL; }
-#line 1546 "obj/tpc-2025-2026.tab.c"
+#line 1547 "obj/tpc-2025-2026.tab.c"
     break;
 
   case 39: /* LValue: IDENT  */
-#line 283 "src/tpc-2025-2026.y"
+#line 284 "src/tpc-2025-2026.y"
        { 
            (yyval.node) = makeNode(T_IDENT);
            strcpy((yyval.node)->ident, (yyvsp[0].ident)); 
        }
-#line 1555 "obj/tpc-2025-2026.tab.c"
+#line 1556 "obj/tpc-2025-2026.tab.c"
     break;
 
   case 40: /* LValue: LValue '.' IDENT  */
-#line 288 "src/tpc-2025-2026.y"
+#line 289 "src/tpc-2025-2026.y"
        {
            (yyval.node) = makeNode(T_MEMBER_ACCESS);
            addChild((yyval.node), (yyvsp[-2].node)); 
            Node *id = makeNode(T_IDENT); strcpy(id->ident, (yyvsp[0].ident));
            addChild((yyval.node), id);
        }
-#line 1566 "obj/tpc-2025-2026.tab.c"
+#line 1567 "obj/tpc-2025-2026.tab.c"
     break;
 
   case 41: /* Exp: Exp OR TB  */
-#line 297 "src/tpc-2025-2026.y"
+#line 298 "src/tpc-2025-2026.y"
        { (yyval.node) = makeNode(T_OR); addChild((yyval.node), (yyvsp[-2].node));
          addChild((yyval.node), (yyvsp[0].node)); }
-#line 1573 "obj/tpc-2025-2026.tab.c"
+#line 1574 "obj/tpc-2025-2026.tab.c"
     break;
 
   case 42: /* Exp: TB  */
-#line 299 "src/tpc-2025-2026.y"
+#line 300 "src/tpc-2025-2026.y"
           { (yyval.node) = (yyvsp[0].node); }
-#line 1579 "obj/tpc-2025-2026.tab.c"
+#line 1580 "obj/tpc-2025-2026.tab.c"
     break;
 
   case 43: /* TB: TB AND FB  */
-#line 303 "src/tpc-2025-2026.y"
+#line 304 "src/tpc-2025-2026.y"
        { (yyval.node) = makeNode(T_AND); addChild((yyval.node), (yyvsp[-2].node));
          addChild((yyval.node), (yyvsp[0].node)); }
-#line 1586 "obj/tpc-2025-2026.tab.c"
+#line 1587 "obj/tpc-2025-2026.tab.c"
     break;
 
   case 44: /* TB: FB  */
-#line 305 "src/tpc-2025-2026.y"
+#line 306 "src/tpc-2025-2026.y"
           { (yyval.node) = (yyvsp[0].node); }
-#line 1592 "obj/tpc-2025-2026.tab.c"
+#line 1593 "obj/tpc-2025-2026.tab.c"
     break;
 
   case 45: /* FB: FB EQ M  */
-#line 309 "src/tpc-2025-2026.y"
+#line 310 "src/tpc-2025-2026.y"
        { 
            (yyval.node) = makeNode(T_EQ);
            strcpy((yyval.node)->comp, (yyvsp[-1].comp)); 
            addChild((yyval.node), (yyvsp[-2].node)); addChild((yyval.node), (yyvsp[0].node)); 
        }
-#line 1602 "obj/tpc-2025-2026.tab.c"
+#line 1603 "obj/tpc-2025-2026.tab.c"
     break;
 
   case 46: /* FB: M  */
-#line 314 "src/tpc-2025-2026.y"
+#line 315 "src/tpc-2025-2026.y"
          { (yyval.node) = (yyvsp[0].node); }
-#line 1608 "obj/tpc-2025-2026.tab.c"
+#line 1609 "obj/tpc-2025-2026.tab.c"
     break;
 
   case 47: /* M: M ORDER E  */
-#line 318 "src/tpc-2025-2026.y"
+#line 319 "src/tpc-2025-2026.y"
        { 
            (yyval.node) = makeNode(T_ORDER);
            strcpy((yyval.node)->comp, (yyvsp[-1].comp)); 
            addChild((yyval.node), (yyvsp[-2].node)); addChild((yyval.node), (yyvsp[0].node)); 
        }
-#line 1618 "obj/tpc-2025-2026.tab.c"
+#line 1619 "obj/tpc-2025-2026.tab.c"
     break;
 
   case 48: /* M: E  */
-#line 323 "src/tpc-2025-2026.y"
+#line 324 "src/tpc-2025-2026.y"
          { (yyval.node) = (yyvsp[0].node); }
-#line 1624 "obj/tpc-2025-2026.tab.c"
+#line 1625 "obj/tpc-2025-2026.tab.c"
     break;
 
   case 49: /* E: E ADDSUB T  */
-#line 327 "src/tpc-2025-2026.y"
+#line 328 "src/tpc-2025-2026.y"
        { 
            (yyval.node) = makeNode(T_ADDSUB);
            (yyval.node)->byte = (yyvsp[-1].byte);
            addChild((yyval.node), (yyvsp[-2].node)); addChild((yyval.node), (yyvsp[0].node)); 
        }
-#line 1634 "obj/tpc-2025-2026.tab.c"
+#line 1635 "obj/tpc-2025-2026.tab.c"
     break;
 
   case 50: /* E: T  */
-#line 332 "src/tpc-2025-2026.y"
+#line 333 "src/tpc-2025-2026.y"
          { (yyval.node) = (yyvsp[0].node); }
-#line 1640 "obj/tpc-2025-2026.tab.c"
+#line 1641 "obj/tpc-2025-2026.tab.c"
     break;
 
   case 51: /* T: T DIVSTAR F  */
-#line 336 "src/tpc-2025-2026.y"
+#line 337 "src/tpc-2025-2026.y"
        { 
            (yyval.node) = makeNode(T_DIVSTAR);
            (yyval.node)->byte = (yyvsp[-1].byte); 
            addChild((yyval.node), (yyvsp[-2].node)); addChild((yyval.node), (yyvsp[0].node)); 
        }
-#line 1650 "obj/tpc-2025-2026.tab.c"
+#line 1651 "obj/tpc-2025-2026.tab.c"
     break;
 
   case 52: /* T: F  */
-#line 341 "src/tpc-2025-2026.y"
+#line 342 "src/tpc-2025-2026.y"
          { (yyval.node) = (yyvsp[0].node); }
-#line 1656 "obj/tpc-2025-2026.tab.c"
+#line 1657 "obj/tpc-2025-2026.tab.c"
     break;
 
   case 53: /* F: ADDSUB F  */
-#line 345 "src/tpc-2025-2026.y"
+#line 346 "src/tpc-2025-2026.y"
        {
            (yyval.node) = makeNode(T_ADDSUB);
            (yyval.node)->byte = (yyvsp[-1].byte); 
            addChild((yyval.node), (yyvsp[0].node));
        }
-#line 1666 "obj/tpc-2025-2026.tab.c"
+#line 1667 "obj/tpc-2025-2026.tab.c"
     break;
 
   case 54: /* F: '!' F  */
-#line 351 "src/tpc-2025-2026.y"
+#line 352 "src/tpc-2025-2026.y"
        {
            (yyval.node) = makeNode(T_NOT);
            addChild((yyval.node), (yyvsp[0].node));
        }
-#line 1675 "obj/tpc-2025-2026.tab.c"
+#line 1676 "obj/tpc-2025-2026.tab.c"
     break;
 
   case 55: /* F: '(' Exp ')'  */
-#line 355 "src/tpc-2025-2026.y"
+#line 356 "src/tpc-2025-2026.y"
                    { (yyval.node) = (yyvsp[-1].node); }
-#line 1681 "obj/tpc-2025-2026.tab.c"
+#line 1682 "obj/tpc-2025-2026.tab.c"
     break;
 
   case 56: /* F: NUM  */
-#line 358 "src/tpc-2025-2026.y"
+#line 359 "src/tpc-2025-2026.y"
        { 
            (yyval.node) = makeNode(T_NUM);
            (yyval.node)->num = (yyvsp[0].num); 
        }
-#line 1690 "obj/tpc-2025-2026.tab.c"
+#line 1691 "obj/tpc-2025-2026.tab.c"
     break;
 
   case 57: /* F: CHARACTER  */
-#line 363 "src/tpc-2025-2026.y"
+#line 364 "src/tpc-2025-2026.y"
        {
            (yyval.node) = makeNode(T_CHARACTER);
            (yyval.node)->character = (yyvsp[0].character);
        }
-#line 1699 "obj/tpc-2025-2026.tab.c"
+#line 1700 "obj/tpc-2025-2026.tab.c"
     break;
 
   case 58: /* F: LValue  */
-#line 368 "src/tpc-2025-2026.y"
+#line 369 "src/tpc-2025-2026.y"
        { (yyval.node) = (yyvsp[0].node); }
-#line 1705 "obj/tpc-2025-2026.tab.c"
+#line 1706 "obj/tpc-2025-2026.tab.c"
     break;
 
   case 59: /* F: IDENT '(' Arguments ')'  */
-#line 370 "src/tpc-2025-2026.y"
+#line 371 "src/tpc-2025-2026.y"
        {
            (yyval.node) = makeNode(T_FCALL);
            Node *id = makeNode(T_IDENT); strcpy(id->ident, (yyvsp[-3].ident));
            addChild((yyval.node), id);
            addChild((yyval.node), (yyvsp[-1].node));
        }
-#line 1716 "obj/tpc-2025-2026.tab.c"
+#line 1717 "obj/tpc-2025-2026.tab.c"
     break;
 
   case 60: /* Arguments: ListExp  */
-#line 379 "src/tpc-2025-2026.y"
+#line 380 "src/tpc-2025-2026.y"
                { (yyval.node) = (yyvsp[0].node); }
-#line 1722 "obj/tpc-2025-2026.tab.c"
+#line 1723 "obj/tpc-2025-2026.tab.c"
     break;
 
   case 61: /* Arguments: %empty  */
-#line 381 "src/tpc-2025-2026.y"
+#line 382 "src/tpc-2025-2026.y"
        { (yyval.node) = NULL; }
-#line 1728 "obj/tpc-2025-2026.tab.c"
+#line 1729 "obj/tpc-2025-2026.tab.c"
     break;
 
   case 62: /* ListExp: ListExp ',' Exp  */
-#line 386 "src/tpc-2025-2026.y"
+#line 387 "src/tpc-2025-2026.y"
        {
            (yyval.node) = (yyvsp[-2].node);
            if ((yyval.node) == NULL) (yyval.node) = makeNode(T_LIST);
            addChild((yyval.node), (yyvsp[0].node));
        }
-#line 1738 "obj/tpc-2025-2026.tab.c"
+#line 1739 "obj/tpc-2025-2026.tab.c"
     break;
 
   case 63: /* ListExp: Exp  */
-#line 393 "src/tpc-2025-2026.y"
+#line 394 "src/tpc-2025-2026.y"
        {
            (yyval.node) = makeNode(T_LIST);
            addChild((yyval.node), (yyvsp[0].node));
        }
-#line 1747 "obj/tpc-2025-2026.tab.c"
+#line 1748 "obj/tpc-2025-2026.tab.c"
     break;
 
 
-#line 1751 "obj/tpc-2025-2026.tab.c"
+#line 1752 "obj/tpc-2025-2026.tab.c"
 
       default: break;
     }
@@ -1940,7 +1941,7 @@ yyreturnlab:
   return yyresult;
 }
 
-#line 399 "src/tpc-2025-2026.y"
+#line 400 "src/tpc-2025-2026.y"
 
 
 void yyerror(const char *s) {
@@ -1955,6 +1956,7 @@ int main(int argc, char **argv) {
         return 0;
     }
     if (argc > 1 && (strcmp(argv[1], "-t") == 0 || strcmp(argv[1], "--tree") == 0)) print = 1;
+    if (argc > 1 && (strcmp(argv[1], "-s") == 0 || strcmp(argv[1], "--tsym") == 0)) printsymb = 1;
     if (argc > 1 && (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0)){
         printf("Utiliser l'analyseur syntaxique : \n\t ./tpcas [options] < fichier.tpc\n\n\tLes options sont : \n\t\t-h / --help : afficher cette aide\n\t\t-t / --tree : afficher l'arbre abstrait généré par Bison\n\n");
         return 0;

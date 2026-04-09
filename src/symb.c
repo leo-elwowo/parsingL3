@@ -109,6 +109,39 @@ void free_table(HashTable * tab){
     }
     free(tab);
 }
+
+void print_table(HashTable * tab, const char * table_name) {
+    /*
+    merci chatgpt
+    */
+    if (tab == NULL) {
+        printf("La table '%s' est vide ou non initialisée.\n", table_name);
+        return;
+    }
+
+    printf("\n=================================================================\n");
+    printf("                TABLE DES SYMBOLES : %-20s \n", table_name);
+    printf("=================================================================\n");
+    printf("| %-20s | %-10s | %-12s | %-5s |\n", "Identificateur", "Type", "Deplacement", "Index");
+    printf("-----------------------------------------------------------------\n");
+
+    for (int i = 0; i < tab->cap; i++) {
+        Bucket tmp = tab->elt[i];
+        while (tmp != NULL) {
+            // Traduction de l'enum Type en chaine de caractères
+            const char *type_str = "inconnu";
+            if (tmp->val->type == TYPE_INT) type_str = "int";
+            else if (tmp->val->type == TYPE_CHAR) type_str = "char";
+
+            printf("| %-20s | %-10s | %-12d | %-5d |\n", 
+                   tmp->val->ident, type_str, tmp->val->deplct, i);
+            
+            tmp = tmp->prochain;
+        }
+    }
+    printf("=================================================================\n");
+    printf("Total : %d symbole(s) enregistré(s) dans '%s'.\n\n", tab->size, table_name);
+}
 /*
 admettons..
 int main(void){
