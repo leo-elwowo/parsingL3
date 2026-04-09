@@ -2,6 +2,7 @@
 #define SYMBOLS
 #include "identsize.h"
 #define N 1008
+#define K 613
 
 typedef enum _type{
     TYPE_INT,

@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdio.h>
 
-int init_symbol(Symbol ** sym, char * ident, Type type){
+int init_symbol(Symbol ** sym, const char * ident, Type type){
     *sym = (Symbol *)malloc(sizeof(Symbol));
     if (!(*sym)) return 1;
     strcpy((*sym)->ident, ident);
@@ -12,11 +12,21 @@ int init_symbol(Symbol ** sym, char * ident, Type type){
 }
 
 int init_bucket(Bucket * bucket, Symbol * sym){
-    bucket = (Bucket *)malloc(sizeof(Bucket));
-    if (!bucket) return 1;
+    *bucket = (Bucket)malloc(sizeof(Node));
+    if (!(*bucket)) return 1;
     (*bucket)->val = sym;
     (*bucket)->prochain = NULL;
     return 0;
+}
+
+unsigned int hfunc(const char * ident){
+    unsigned long long h = 0;   //il faut que h puisse etre tres tres grand
+                                //parce qu'on multiplie par K a chaque caractère
+    for (int i = 0; ident[i] != '\0'; i++){
+        h = K * h + ident[i];
+    }
+    unsigned int rtrn = (h % 1073741824) % N;
+    return rtrn;
 }
 
 int insert_on_bucket_head(Bucket * bucket, Symbol * sym){
@@ -45,29 +55,43 @@ int init_table(HashTable ** tab){
     return 0;
 }
 
-static int check_if_present(const Bucket bucket, const char * ident){
-    Bucket tmp = bucket;
-    while (tmp){
-        if (strcmp(tmp->val->ident, ident) == 0){
-            return 0;//present
+Symbol * check_if_present_and_move_to_head_then(Bucket * bucket, const char * ident){
+    //bucket pointer parce qu'on pourrait le remettre en tete l'ident
+    Bucket prev = NULL;
+    Bucket curr = *bucket;
+
+    while (curr) {
+        if (strcmp(curr->val->ident, ident) == 0) {
+            // Si l'élément est trouvé et n'est pas déjà en tête
+            if (prev != NULL) {
+                // Détacher l'élément de sa position actuelle
+                prev->prochain = curr->prochain;
+                // Le placer au tout début (en tête)
+                curr->prochain = *bucket;
+                *bucket = curr;
+            }
+            return curr->val; // Symbole trouvé
         }
-        tmp = tmp->prochain;
+        prev = curr;
+        curr = curr->prochain;
     }
-    return 1; //pas présent
+    return NULL; // Pas présent
 }
 
-void insert_value(const char * ident,const Type type, HashTable * tab, int index){
+void insert_value(const char * ident,const Type type, HashTable * tab){
     /*
     tant qu'on a pas programmé la table de hashage, on va juste prendre dans l'ordre
     avec un index
-    
+    edit : c'est fait :))
     */
-    Symbol * ajt = NULL;
-    init_symbol(&ajt, ident, type);
-    if (!check_if_present(tab->elt[index], ident)){
-        insert_on_bucket_head(&tab->elt[index], ajt);
+    unsigned int hf_index = hfunc(ident);
+    
+    if (!check_if_present(tab->elt[hf_index], ident)){
+        Symbol * ajt = NULL;
+        init_symbol(&ajt, ident, type);
+        insert_on_bucket_head(&tab->elt[hf_index], ajt);
     }
-    else printf("nothing inserted, value already present....\n");
+    else fprintf(stderr,"nothing inserted, value already present....\n");
 }
 
 static void free_bucket(Bucket * bucket){
@@ -91,5 +115,5 @@ void free_table(HashTable * tab){
 int main(void){
     HashTable * table;
     init_table(&table);
-    insert_value("abcd", TYPE_CHAR, table, 0);
+    insert_value("abcd", TYPE_CHAR, table);
 }
