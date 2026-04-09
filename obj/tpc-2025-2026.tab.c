@@ -1951,7 +1951,6 @@ void yyerror(const char *s) {
 
 int main(int argc, char **argv) {
     int print_tree_bool = 0;
-    FILE * nasm_test;
     if (argc == 1){
         printf("Utiliser l'analyseur syntaxique : \n\t ./tpcas [options] < fichier.tpc\n\n\tLes options sont : \n\t\t-h / --help : afficher cette aide\n\t\t-t / --tree : afficher l'arbre abstrait généré par Bison\n\n");
         printf("\n/DEBUG/\nargc = %d\n", argc);
