@@ -11,6 +11,7 @@ void yyerror(const char *s);
 extern int lineno;
 int nberror = 0;
 int printsymb = 0;
+FILE * nasm_output;
 
 Node *root = NULL;
 %}
@@ -404,7 +405,8 @@ void yyerror(const char *s) {
 }
 
 int main(int argc, char **argv) {
-    int print = 0;
+    int print_tree_bool = 0;
+    FILE * nasm_test;
     if (argc == 1){
         printf("Utiliser l'analyseur syntaxique : \n\t ./tpcas [options] < fichier.tpc\n\n\tLes options sont : \n\t\t-h / --help : afficher cette aide\n\t\t-t / --tree : afficher l'arbre abstrait généré par Bison\n\n");
         printf("\n/DEBUG/\nargc = %d\n", argc);
@@ -412,7 +414,7 @@ int main(int argc, char **argv) {
     }
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "-t") == 0 || strcmp(argv[i], "--tree") == 0) {
-            print = 1;
+            print_tree_bool = 1;
         }
         else if (strcmp(argv[i], "-s") == 0 || strcmp(argv[i], "--tsym") == 0) {
             printsymb = 1;
@@ -425,11 +427,13 @@ int main(int argc, char **argv) {
     if (yyparse() == 0) {
         /*si ya pas de problèmes !!!!*/
         
-        if (print && root != NULL) {
+        nasm_output = fopen("./anonymous.asm", "w+");
+        if (print_tree_bool && root != NULL) {
             printTree(root);
             
         }
         sem(root);
+        fclose(nasm_output);
         return 0;
     }
     return 1 + nberror;

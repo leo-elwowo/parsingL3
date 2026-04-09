@@ -8,8 +8,11 @@ HashTable *global_table = NULL;
 HashTable *local_table = NULL;
 int current_offset = 0; 
 extern int printsymb;
+extern FILE * nasm_output;
+
 
 void sem(Node *node) {
+    
     if (node == NULL) return;
     switch (node->label) {
         case T_PROG:
@@ -18,6 +21,7 @@ void sem(Node *node) {
 
         case T_FUNC:
             init_table(&local_table);
+            
             current_offset = 0; 
             break;
         case T_DECL_VARS: 
@@ -87,7 +91,7 @@ void sem(Node *node) {
         case T_STRUCT_DECL:
 
             break;
-
+        
         default:
             break;
     }
@@ -96,17 +100,33 @@ void sem(Node *node) {
         && node->label != T_MEMBER_ACCESS && node->label != T_FCALL && node->label != T_STRUCT_DECL) {
         
         for (Node *child = node->firstChild; child != NULL; child = child->nextSibling) {
+            if (child->label == T_ASSIGN){
+                printf("ASSIGN\n");
+            }
             sem(child);
         }
     }
 
     if (node->label == T_HEADER) {
+        //printf("name of func : %s\n", node->firstChild->nextSibling->ident);
+        /*
+        the HEADER node contains the header of a function, so its name and its return type
+
+        here we check the name of the function contained
+        in node->firstChild->nextSibling->ident
+        if the name of the function is main, we write the basic asm instructions
+        */
+        if (!strcmp(node->firstChild->nextSibling->ident, "main")){
+            fwrite("global _start\nsection .text\nstart:\n",sizeof(char), 35, nasm_output );
+            fwrite( "mov rax, 60\nmov rdi, 0\nsyscall\n", sizeof(char), 31,nasm_output);
+        }
         for (Node *child = node->firstChild; child != NULL; child = child->nextSibling) {
             if (child->label != T_IDENT && child->label != T_TYPE) {
                 sem(child);
             }
         }
     }
+
 
     if (node->label == T_FUNC) {
         // free_table(local_table); 
