@@ -6,11 +6,19 @@ LDFLAGS = -lfl
 PARSER = tpc-2025-2026
 LEXER = projlexic
 
-bin/tpcas: obj/lex.yy.o obj/$(PARSER).tab.o obj/tree.o
+bin/tpcas: obj/lex.yy.o obj/$(PARSER).tab.o obj/tree.o obj/symb.o obj/sem.o
 	mkdir -p bin
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 obj/tree.o: src/tree.c src/tree.h
+	mkdir -p obj
+	$(CC) -c -o $@ $< $(CFLAGS)
+
+obj/symb.o: src/symb.c src/symb.h
+	mkdir -p obj
+	$(CC) -c -o $@ $< $(CFLAGS)
+
+obj/sem.o: src/sem.c src/sem.h src/symb.h src/tree.h
 	mkdir -p obj
 	$(CC) -c -o $@ $< $(CFLAGS)
 
