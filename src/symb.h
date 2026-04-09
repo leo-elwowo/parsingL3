@@ -12,6 +12,7 @@ typedef enum _type{
 typedef struct _symb{
     char ident[MAX_IDENTSIZE];
     Type type;
+    int deplct;
 }Symbol;
 
 typedef struct _bucket{

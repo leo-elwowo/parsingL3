@@ -8,6 +8,7 @@ int init_symbol(Symbol ** sym, const char * ident, Type type){
     if (!(*sym)) return 1;
     strcpy((*sym)->ident, ident);
     (*sym)->type = type;
+    (*sym)->deplct = 0;//on verra plus tard mdr
     return 0;
 }
 
@@ -73,30 +74,32 @@ void insert_value(const char * ident,const Type type, HashTable * tab){
     */
     unsigned int hf_index = hfunc(ident);
     
-    if (!check_if_present(tab->elt[hf_index], ident)){
+    if (check_if_present_and_move_to_head_then (tab->elt[hf_index], ident) == NULL){
         Symbol * ajt = NULL;
         init_symbol(&ajt, ident, type);
         insert_on_bucket_head(&tab->elt[hf_index], ajt);
+        tab->size++;
     }
     else fprintf(stderr,"nothing inserted, value already present....\n");
 }
 
-static void free_bucket(Bucket * bucket){
-    Bucket tmp = (*bucket);
+static void free_bucket(Bucket bucket){
+    Bucket tmp = bucket;
     Bucket freeer;
     while (tmp){
         freeer = tmp;
+        tmp = tmp->prochain;
         free(freeer->val);
         free(freeer);
-        tmp = tmp->prochain;
-    }
-    free(bucket);
+        
+    }   
 }
 
 void free_table(HashTable * tab){
-    for (int i = 0; i < tab->size; i++){
+    for (int i = 0; i < tab->cap; i++){
         free_bucket(tab->elt[i]);
     }
+    free(tab);
 }
 
 int main(void){
