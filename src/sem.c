@@ -25,7 +25,7 @@ void sem(Node *node) {
             if (list1 == NULL || list1->label != T_LIST) break;
 
             Node *type_node = list1->firstChild;
-            if (type_node == NULL || type_node->label != T_TYPE) break;
+            if (type_node == NULL || (type_node->label != T_TYPE && type_node->label != T_TYPE_STRUCT)) break;
 
             Type current_type = TYPE_INT;
             HashTable *target_table = (local_table != NULL) ? local_table : global_table;
@@ -70,11 +70,30 @@ void sem(Node *node) {
             break;
         }
 
+        case T_MEMBER_ACCESS:
+
+            if (node->firstChild != NULL) {
+                sem(node->firstChild);
+            }
+            break;
+
+        case T_FCALL:
+            if (node->firstChild != NULL && node->firstChild->nextSibling != NULL) {
+                sem(node->firstChild->nextSibling);
+            }
+            break;
+
+        case T_STRUCT_DECL:
+
+            break;
+
         default:
             break;
     }
 
-    if (node->label != T_DECL_VARS && node->label != T_PARAM && node->label != T_HEADER) {
+    if (node->label != T_DECL_VARS && node->label != T_PARAM && node->label != T_HEADER 
+        && node->label != T_MEMBER_ACCESS && node->label != T_FCALL && node->label != T_STRUCT_DECL) {
+        
         for (Node *child = node->firstChild; child != NULL; child = child->nextSibling) {
             sem(child);
         }
