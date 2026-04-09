@@ -23,11 +23,7 @@ static unsigned int hfunc(const char * ident){
     return rtrn;
 }
 
-Symbol* search_value(const char * ident, HashTable * tab) {
-    if (tab == NULL) return NULL;
-    unsigned int hf_index = hfunc(ident);
-    return check_if_present_and_move_to_head_then(&tab->elt[hf_index], ident);
-}
+
 
 static int insert_on_bucket_head(Bucket * bucket, Symbol * sym){
     Bucket tmp = (Bucket)malloc(sizeof(SymNode));
@@ -70,6 +66,12 @@ static Symbol * check_if_present_and_move_to_head_then(Bucket * bucket, const ch
         curr = curr->prochain;
     }
     return NULL; // Pas présent
+}
+
+Symbol* search_value(const char * ident, HashTable * tab) {
+    if (tab == NULL) return NULL;
+    unsigned int hf_index = hfunc(ident);
+    return check_if_present_and_move_to_head_then(&tab->elt[hf_index], ident);
 }
 
 void insert_value(const char * ident,const Type type, int deplct, HashTable * tab){
