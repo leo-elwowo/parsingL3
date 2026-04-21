@@ -10,10 +10,35 @@ int current_offset = 0;
 extern int printsymb;
 extern FILE * nasm_output;
 
+static void write_asm_expr(FILE * file, Node * node){
+    if (!node)
+        return;
+    switch (node->label) {
+        case T_NUM:
+        fprintf(file, "\tpush %d\n", node->num);
+        break;
+        case T_ADDSUB:
+        generate_asm_expression(node->firstChild, file);    //on va push la partie gauche
+        generate_asm_expression(node->firstChild->nextSibling, file); //push la droite
+
+        //et apres on la depile dans rbx et rax
+        fprintf(file, "    pop rbx\n");
+        fprintf(file, "    pop rax\n");
+        fprintf(file, "    sub rax, rbx\n");
+        fprintf(file, "    push rax\n");
+        break;
+        default:
+        for (Node *child = node->firstChild; child != NULL; child = child->nextSibling) {
+            generate_asm_expression(child, file);
+        }
+        break;
+    }
+    return;
+}
 
 void sem(Node *node) {
     
-    if (node == NULL) return;
+    if (!node) return;
     switch (node->label) {
         case T_PROG:
             init_table(&global_table);
@@ -116,7 +141,7 @@ void sem(Node *node) {
         in node->firstChild->nextSibling->ident
         if the name of the function is main, we write the basic asm instructions
         */
-        if (!strcmp(node->firstChild->nextSibling->ident, "main")){
+        if (!strcmp(node->firstChild->nextSibling->ident, "main")){ //je devrais utiliser fprintf je suis baka
             fwrite("global _start\nsection .text\nstart:\n",sizeof(char), 35, nasm_output );
             fwrite( "mov rax, 60\nmov rdi, 0\nsyscall\n", sizeof(char), 31,nasm_output);
         }
