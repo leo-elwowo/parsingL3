@@ -10,29 +10,44 @@ int current_offset = 0;
 extern int printsymb;
 extern FILE * nasm_output;
 
+static void homemade_fseek(FILE * file){
+    fseek(file, -31, SEEK_END);
+}
+
+static void write_end_syscall(){
+    fwrite( "mov rax, 60\nmov rdi, 0\nsyscall\n", sizeof(char), 31,nasm_output);
+}
+
 static void write_asm_expr(FILE * file, Node * node){
     if (!node)
         return;
+    //homemade_fseek(file);
     switch (node->label) {
         case T_NUM:
         fprintf(file, "\tpush %d\n", node->num);
         break;
         case T_ADDSUB:
-        generate_asm_expression(node->firstChild, file);    //on va push la partie gauche
-        generate_asm_expression(node->firstChild->nextSibling, file); //push la droite
+        if (node->byte == '-'){
+            //si c'est une soustraction on fait ca
+            write_asm_expr(file, node->firstChild);    //on va push la partie gauche
+            write_asm_expr(file, node->firstChild->nextSibling);    //push la droite
 
-        //et apres on la depile dans rbx et rax
-        fprintf(file, "    pop rbx\n");
-        fprintf(file, "    pop rax\n");
-        fprintf(file, "    sub rax, rbx\n");
-        fprintf(file, "    push rax\n");
+            //et apres on la depile dans rbx et rax
+            fprintf(file, "    pop rbx\n");
+            fprintf(file, "    pop rax\n");
+            fprintf(file, "    sub rax, rbx\n");
+            fprintf(file, "    push rax\n");
+            
+        }
         break;
         default:
+        //ici c'est juste pr si nos enfants doivent etre parcourus
         for (Node *child = node->firstChild; child != NULL; child = child->nextSibling) {
-            generate_asm_expression(child, file);
+            write_asm_expr(file, child);
         }
         break;
     }
+    //fseek(file, 0, SEEK_END);
     return;
 }
 
@@ -126,7 +141,9 @@ void sem(Node *node) {
         
         for (Node *child = node->firstChild; child != NULL; child = child->nextSibling) {
             if (child->label == T_ASSIGN){
-                printf("ASSIGN\n");
+                printf("ASSIGN : writing...\n");
+                write_asm_expr(nasm_output, child);
+                
             }
             sem(child);
         }
@@ -142,8 +159,9 @@ void sem(Node *node) {
         if the name of the function is main, we write the basic asm instructions
         */
         if (!strcmp(node->firstChild->nextSibling->ident, "main")){ //je devrais utiliser fprintf je suis baka
-            fwrite("global _start\nsection .text\nstart:\n",sizeof(char), 35, nasm_output );
-            fwrite( "mov rax, 60\nmov rdi, 0\nsyscall\n", sizeof(char), 31,nasm_output);
+            fwrite("global _start\nsection .text\nstart:\n",sizeof(char), 35, nasm_output);
+
+            write_end_syscall();
         }
         for (Node *child = node->firstChild; child != NULL; child = child->nextSibling) {
             if (child->label != T_IDENT && child->label != T_TYPE) {
@@ -151,7 +169,7 @@ void sem(Node *node) {
             }
         }
     }
-
+    
 
     if (node->label == T_FUNC) {
         // free_table(local_table); 
