@@ -37,7 +37,6 @@ static void write_asm_expr(FILE * file, Node * node){
             fprintf(file, "    pop rax\n");
             fprintf(file, "    sub rax, rbx\n");
             fprintf(file, "    push rax\n");
-            
         }
         break;
         default:
@@ -60,9 +59,27 @@ void sem(Node *node) {
             break;
 
         case T_FUNC:
+            /*
+            a T_FUNC has two children : 
+                firstChild : HEADER
+                firstChild->nextSibling : BODY
+
+            the HEADER node contains the header of a function, 
+            so its name and its return type
+            here we check the name of the function contained
+            in node->firstChild->firstChild->nextSibling->ident
+            if the name of the function is main, we write the basic asm instructions
+            */
             init_table(&local_table);
-            
             current_offset = 0; 
+            if (!strcmp(node->firstChild->firstChild->nextSibling->ident, "main")){ //je devrais utiliser fprintf je suis baka
+                fwrite("global _start\nsection .text\nstart:\n",sizeof(char), 35, nasm_output);
+            }
+            sem(node->firstChild);                  //sem HEADER
+            sem(node->firstChild->nextSibling);     //sem BODY
+            if (!strcmp(node->firstChild->firstChild->nextSibling->ident, "main")){
+                write_end_syscall();
+            }
             break;
         case T_DECL_VARS: 
         {
@@ -131,14 +148,20 @@ void sem(Node *node) {
         case T_STRUCT_DECL:
 
             break;
-        
+        case T_HEADER:
+            
+            break;
         default:
             break;
     }
 
     if (node->label != T_DECL_VARS && node->label != T_PARAM && node->label != T_HEADER 
-        && node->label != T_MEMBER_ACCESS && node->label != T_FCALL && node->label != T_STRUCT_DECL) {
-        
+        && node->label != T_MEMBER_ACCESS && node->label != T_FCALL 
+        && node->label != T_STRUCT_DECL && node->label != T_FUNC) {
+        /*
+        ce bloc d'instruction permet de parcourir l'arbre dans le cas ou l'on a pas 
+        défini de comportement spécifique à un noeud
+        */
         for (Node *child = node->firstChild; child != NULL; child = child->nextSibling) {
             if (child->label == T_ASSIGN){
                 printf("ASSIGN : writing...\n");
@@ -151,18 +174,8 @@ void sem(Node *node) {
 
     if (node->label == T_HEADER) {
         //printf("name of func : %s\n", node->firstChild->nextSibling->ident);
-        /*
-        the HEADER node contains the header of a function, so its name and its return type
-
-        here we check the name of the function contained
-        in node->firstChild->nextSibling->ident
-        if the name of the function is main, we write the basic asm instructions
-        */
-        if (!strcmp(node->firstChild->nextSibling->ident, "main")){ //je devrais utiliser fprintf je suis baka
-            fwrite("global _start\nsection .text\nstart:\n",sizeof(char), 35, nasm_output);
-
-            write_end_syscall();
-        }
+        
+        //i had the detection of main here before, i moved it to T_FUNC
         for (Node *child = node->firstChild; child != NULL; child = child->nextSibling) {
             if (child->label != T_IDENT && child->label != T_TYPE) {
                 sem(child);
