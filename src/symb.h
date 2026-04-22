@@ -9,6 +9,18 @@ typedef enum _type{
     TYPE_CHAR
 } Type;
 
+typedef enum _typetype{
+    BASE_TYPE,
+    CONSTRUCTOR_TYPE,
+    NAME_TYPE
+} TypeType;
+
+typedef struct _typeExpression{
+    TypeType type_expression_type;
+    struct _typeExpression * firstChild;
+    struct _typeExpression * secondChild;
+}TypeExpression;
+
 typedef struct _symb{
     char ident[MAX_IDENTSIZE];
     Type type;

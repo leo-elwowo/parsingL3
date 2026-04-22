@@ -3,16 +3,13 @@
 #include <string.h>
 #include "tree.h"
 #include "symb.h"
+#include "sem.h"
 
 HashTable *global_table = NULL;
 HashTable *local_table = NULL;
 int current_offset = 0; 
 extern int printsymb;
 extern FILE * nasm_output;
-
-static void homemade_fseek(FILE * file){
-    fseek(file, -31, SEEK_END);
-}
 
 static void write_end_syscall(){
     fwrite( "mov rax, 60\nmov rdi, 0\nsyscall\n", sizeof(char), 31,nasm_output);
@@ -21,7 +18,6 @@ static void write_end_syscall(){
 static void write_asm_expr(FILE * file, Node * node){
     if (!node)
         return;
-    //homemade_fseek(file);
     switch (node->label) {
         case T_NUM:
         fprintf(file, "\tpush %d\n", node->num);
@@ -41,12 +37,12 @@ static void write_asm_expr(FILE * file, Node * node){
         break;
         default:
         //ici c'est juste pr si nos enfants doivent etre parcourus
+        //à implementer
         for (Node *child = node->firstChild; child != NULL; child = child->nextSibling) {
             write_asm_expr(file, child);
         }
         break;
     }
-    //fseek(file, 0, SEEK_END);
     return;
 }
 
@@ -151,23 +147,22 @@ void sem(Node *node) {
         case T_HEADER:
             
             break;
+        case T_ASSIGN:
+            write_asm_expr(nasm_output, node);
+            break;
         default:
             break;
     }
 
     if (node->label != T_DECL_VARS && node->label != T_PARAM && node->label != T_HEADER 
         && node->label != T_MEMBER_ACCESS && node->label != T_FCALL 
-        && node->label != T_STRUCT_DECL && node->label != T_FUNC) {
+        && node->label != T_STRUCT_DECL && node->label != T_FUNC
+        && node->label != T_ASSIGN) {
         /*
         ce bloc d'instruction permet de parcourir l'arbre dans le cas ou l'on a pas 
         défini de comportement spécifique à un noeud
         */
         for (Node *child = node->firstChild; child != NULL; child = child->nextSibling) {
-            if (child->label == T_ASSIGN){
-                printf("ASSIGN : writing...\n");
-                write_asm_expr(nasm_output, child);
-                
-            }
             sem(child);
         }
     }
