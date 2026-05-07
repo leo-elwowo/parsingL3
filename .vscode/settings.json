@@ -19,6 +19,7 @@
         "sstream": "c",
         "streambuf": "c",
         "valarray": "c",
-        "format": "c"
+        "format": "c",
+        "__node_handle": "c"
     }
 }

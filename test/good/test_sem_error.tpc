@@ -1,10 +1,9 @@
-
-int abcd(int n) {
-    return n+1;
+int abcd(int n, int x) {
+    return n+x+1;
 }
 
 int main(void){
-    int a;
-    b = abcd(a);
+    int a, b, c;
+    d = abcd(a, b);
     return 1;
 }

@@ -1,6 +1,8 @@
 
 #ifndef TREE
 #define TREE
+#include "symb.h"
+
 typedef enum {
   T_PROG, 
   T_DECL_VARS, 
@@ -34,20 +36,17 @@ typedef enum {
   T_VOID
 } label_t;
 
-typedef struct _effectiveType{
-  int qsdkjqsdg;
-  char dqlgkmldsg;
-} EffectiveType;
 
 typedef struct Node {
   label_t label;
   int lineno;
   struct Node *firstChild, *nextSibling;
   char ident[64];
-  int num; 
+  int num;  
   char byte;
   char character;
   char comp[4];
+  Type type;
 } Node;
 
 Node *makeNode(label_t label);

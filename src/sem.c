@@ -83,6 +83,22 @@ static void write_asm_expr(FILE * file, Node * node){
     return;
 }
 
+//je dois écrire une fonction qui prend un noeud et qui détermine son type
+static Type infer_node_type(Node * node){
+    switch(node->label){
+        case T_NUM:
+        return TYPE_INT;
+        case T_CHARACTER:
+        return TYPE_CHAR;
+        case T_IDENT:
+        break;
+        default:
+        return TYPE_INT;
+        break;
+    }
+}
+
+
 void sem(Node *node) {
     
     if (!node) return;
@@ -90,6 +106,8 @@ void sem(Node *node) {
     //décommenter cette ligne pour afficher le parcours de l'arbre
     printf("current node : %s\n", StringFromLabel_suppr_juste_pour_print[node->label]);
     
+    
+
     switch (node->label) {
         case T_PROG:
             init_table(&global_table);
