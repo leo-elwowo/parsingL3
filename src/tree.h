@@ -34,6 +34,11 @@ typedef enum {
   T_VOID
 } label_t;
 
+typedef struct _effectiveType{
+  int qsdkjqsdg;
+  char dqlgkmldsg;
+} EffectiveType;
+
 typedef struct Node {
   label_t label;
   int lineno;

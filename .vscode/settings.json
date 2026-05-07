@@ -2,6 +2,23 @@
     "files.associations": {
         "*.y": "yacc",
         "string.h": "c",
-        "stdio.h": "c"
+        "stdio.h": "c",
+        "array": "c",
+        "atomic": "c",
+        "complex": "c",
+        "chrono": "c",
+        "ratio": "c",
+        "string_view": "c",
+        "system_error": "c",
+        "type_traits": "c",
+        "fstream": "c",
+        "functional": "c",
+        "istream": "c",
+        "ostream": "c",
+        "ranges": "c",
+        "sstream": "c",
+        "streambuf": "c",
+        "valarray": "c",
+        "format": "c"
     }
 }

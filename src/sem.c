@@ -11,6 +11,42 @@ int current_offset = 0;
 extern int printsymb;
 extern FILE * nasm_output;
 
+static const char *StringFromLabel_suppr_juste_pour_print[] = {
+    /*
+    j'ai recopié ca depuis le tree.c c'est juste pour que je puisse
+    l'utiliser pour voir quels types de noeuds je parcours*/
+  "PROG", 
+  "DECL_VARS", 
+  "DECL_FONCTS",
+  "FUNC", 
+  "HEADER", 
+  "BODY", 
+  "PARAM",
+  "INSTR_LIST", 
+  "IF", 
+  "WHILE", 
+  "RETURN", 
+  "ASSIGN", 
+  "FCALL",
+  "OR", 
+  "AND", 
+  "EQ", 
+  "ORDER", 
+  "ADDSUB", 
+  "DIVSTAR", 
+  "NOT",
+  "IDENT", 
+  "NUM", 
+  "CHARACTER", 
+  "TYPE",
+  "TAB",
+  "STRUCT_DECL", 
+  "MEMBER_ACCESS", 
+  "TYPE_STRUCT",
+  "LIST",
+  "VOID"
+};
+
 static void write_end_syscall(){
     fwrite( "mov rax, 60\nmov rdi, 0\nsyscall\n", sizeof(char), 31,nasm_output);
 }
@@ -18,6 +54,7 @@ static void write_end_syscall(){
 static void write_asm_expr(FILE * file, Node * node){
     if (!node)
         return;
+    
     switch (node->label) {
         case T_NUM:
         fprintf(file, "\tpush %d\n", node->num);
@@ -49,6 +86,10 @@ static void write_asm_expr(FILE * file, Node * node){
 void sem(Node *node) {
     
     if (!node) return;
+    
+    //décommenter cette ligne pour afficher le parcours de l'arbre
+    printf("current node : %s\n", StringFromLabel_suppr_juste_pour_print[node->label]);
+    
     switch (node->label) {
         case T_PROG:
             init_table(&global_table);
@@ -157,10 +198,11 @@ void sem(Node *node) {
     if (node->label != T_DECL_VARS && node->label != T_PARAM && node->label != T_HEADER 
         && node->label != T_MEMBER_ACCESS && node->label != T_FCALL 
         && node->label != T_STRUCT_DECL && node->label != T_FUNC
-        && node->label != T_ASSIGN) {
+        /*&& node->label != T_ASSIGN*/) {
         /*
         ce bloc d'instruction permet de parcourir l'arbre dans le cas ou l'on a pas 
         défini de comportement spécifique à un noeud
+        il permet de parcourir les enfants d'un noeud anyway
         */
         for (Node *child = node->firstChild; child != NULL; child = child->nextSibling) {
             sem(child);

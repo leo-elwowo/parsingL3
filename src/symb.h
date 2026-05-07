@@ -9,6 +9,7 @@ typedef enum _type{
     TYPE_CHAR
 } Type;
 
+
 typedef enum _typetype{
     BASE_TYPE,
     CONSTRUCTOR_TYPE,
