@@ -6,6 +6,8 @@ LDFLAGS = -lfl
 PARSER = tpc-2025-2026
 LEXER = projlexic
 
+BINARY = compiled
+
 bin/tpcas: obj/lex.yy.o obj/$(PARSER).tab.o obj/tree.o obj/symb.o obj/sem.o
 	mkdir -p bin
 	$(CC) -o $@ $^ $(LDFLAGS)
@@ -38,3 +40,9 @@ obj/lex.yy.o: obj/lex.yy.c
 
 clean:
 	rm -rf obj bin
+
+test_asm: bin/tpcas
+	./bin/tpcas < gen-code-types.tpc
+	nasm -f elf64 anonymous.asm
+	ld -o $(BINARY) anonymous.o
+	./$(BINARY)
