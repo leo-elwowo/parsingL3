@@ -1,0 +1,16 @@
+int th_level;
+int electro_dragon_unlocked;
+
+int main(void) {
+    th_level = 11;
+    electro_dragon_unlocked = 1;
+    
+    // th_level - 11 vaut 0, donc la condition est fausse
+    if (th_level - 11) { 
+        electro_dragon_unlocked = 0; 
+    }
+    
+    return electro_dragon_unlocked; 
+}
+
+//COC MDR ? 

@@ -51,6 +51,11 @@ static void write_end_syscall(){
     fwrite( "mov rax, 60\nmov rdi, 0\nsyscall\n", sizeof(char), 31,nasm_output);
 }
 
+static int newlabel(){
+    static int i = 0;
+    return ++i;
+}
+
 static void write_asm_expr(FILE * file, Node * node){
     if (!node)
         return;
@@ -106,6 +111,9 @@ static void write_asm_expr(FILE * file, Node * node){
         else{
 
             //pour faire idiv, mais je suis pas sur que ce soit la bonne facon
+            /*
+            update après vérification ca marche mais il faut que le dividende soit positif
+            */
             fprintf(file, "\txor rdx, rdx\n");
             fprintf(file, "\tidiv rbx\n");
             fprintf(file, "\tpush rax\n");    
@@ -122,20 +130,6 @@ static void write_asm_expr(FILE * file, Node * node){
             fprintf(file, "\tpush rax\n");
         }
         break;
-
-        case T_ASSIGN: 
-        write_asm_expr(file, node->firstChild->nextSibling);
-        
-        Node *var_node = node->firstChild;
-        
-        if (var_node->label == T_IDENT) {
-            Symbol *s_assign = search_value(var_node->ident, global_table);
-            if (s_assign != NULL) {
-                fprintf(file, "\tpop rax\n");
-                fprintf(file, "\tmov [%s], rax\n", s_assign->ident);
-            }
-        }
-        break;
         
         default:
         //ici c'est juste pr si nos enfants doivent etre parcourus
@@ -145,6 +139,56 @@ static void write_asm_expr(FILE * file, Node * node){
         break;
     }
     return;
+}
+
+static void write_asm_instr(FILE * file, Node * node){
+    /*
+    oui oui oui je sais je suis très vilain vu que nasmoutput 
+    est le fichier de sortie je pourrais enlever l'argument file
+    */
+    if (!node) return;
+
+    switch (node->label) {
+        case T_IF: {
+            int label_fin = newlabel(); // Génère un numéro unique
+
+            // 1. Évaluer la condition (fils gauche)
+            // L'expression va se calculer et mettre son résultat au sommet de la pile
+            write_asm_expr(file, node->firstChild);
+
+            // 2. Dépiler et tester le résultat
+            fprintf(file, "\tpop rax\n");
+            fprintf(file, "\tcmp rax, 0\n");
+            fprintf(file, "\tje .L%d\n", label_fin); // "Jump if Equal" : si c'est 0 (faux), on saute la suite
+
+            // 3. Générer le code du bloc IF (fils droit)
+            write_asm_instr(file, node->firstChild->nextSibling);
+
+            // 4. Placer l'étiquette de fin
+            fprintf(file, ".L%d:\n", label_fin);
+            break;
+        }
+
+        case T_ASSIGN: {
+            write_asm_expr(file, node->firstChild->nextSibling);
+            Node *var_node = node->firstChild;
+            if (var_node->label == T_IDENT) {
+                Symbol *s_assign = search_value(var_node->ident, global_table);
+                if (s_assign != NULL) {
+                    fprintf(file, "\tpop rax\n");
+                    fprintf(file, "\tmov [%s], rax\n", s_assign->ident);
+                }
+            }
+            break;
+        }
+
+        default:
+            // Pour descendre dans les blocs (T_BODY, suites d'instructions...)
+            for (Node *child = node->firstChild; child != NULL; child = child->nextSibling) {
+                write_asm_instr(file, child);
+            }
+            break;
+    }
 }
 
 //une fonction qui prend un noeud et qui détermine son type
@@ -198,12 +242,12 @@ void sem(Node *node) {
             init_table(&local_table);
             current_offset = 0; 
             if (!strcmp(node->firstChild->firstChild->nextSibling->ident, "main")){
-
                 fprintf(nasm_output, "section .text\nglobal _start\n_start:\n");
             }
             sem(node->firstChild);                  //sem HEADER
             sem(node->firstChild->nextSibling);     //sem BODY
             if (!strcmp(node->firstChild->firstChild->nextSibling->ident, "main")){
+                write_asm_instr(nasm_output, node->firstChild->nextSibling);
                 write_end_syscall();
             }
             break;
@@ -304,7 +348,7 @@ void sem(Node *node) {
     if (node->label != T_DECL_VARS && node->label != T_PARAM && node->label != T_HEADER 
         && node->label != T_MEMBER_ACCESS && node->label != T_FCALL 
         && node->label != T_STRUCT_DECL && node->label != T_FUNC
-        /*&& node->label != T_ASSIGN*/) {
+        && node->label != T_ASSIGN) {
         /*
         ce bloc d'instruction permet de parcourir l'arbre dans le cas ou l'on a pas 
         défini de comportement spécifique à un noeud

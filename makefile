@@ -42,7 +42,7 @@ clean:
 	rm -rf obj bin
 
 test_asm: bin/tpcas
-	./bin/tpcas < gen-code-types.tpc
+	./bin/tpcas < iftest.tpc
 	nasm -f elf64 anonymous.asm
 	ld -o $(BINARY) anonymous.o
 	./$(BINARY) 
