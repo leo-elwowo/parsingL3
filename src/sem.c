@@ -150,25 +150,66 @@ static void write_asm_instr(FILE * file, Node * node){
 
     switch (node->label) {
         case T_IF: {
-            int label_fin = newlabel(); // Génère un numéro unique
-
+            int label_else = newlabel(); // Étiquette pour aller au ELSE (ou à la fin si pas de else)
+            
             // 1. Évaluer la condition (fils gauche)
-            // L'expression va se calculer et mettre son résultat au sommet de la pile
             write_asm_expr(file, node->firstChild);
 
-            // 2. Dépiler et tester le résultat
+            // 2. Tester le résultat
             fprintf(file, "\tpop rax\n");
             fprintf(file, "\tcmp rax, 0\n");
-            fprintf(file, "\tje .L%d\n", label_fin); // "Jump if Equal" : si c'est 0 (faux), on saute la suite
+            fprintf(file, "\tje .L%d\n", label_else); // Si 0 (Faux), on saute à label_else
 
-            // 3. Générer le code du bloc IF (fils droit)
+            // 3. Bloc IF (Vrai) : le 2ème enfant
             write_asm_instr(file, node->firstChild->nextSibling);
 
-            // 4. Placer l'étiquette de fin
+            // 4. On vérifie s'il y a un bloc ELSE (un 3ème enfant)
+            if (node->firstChild->nextSibling->nextSibling != NULL) {
+                int label_fin = newlabel(); // On a besoin d'une 2ème étiquette pour la fin
+                
+                // À la fin du bloc IF, on saute par-dessus le bloc ELSE
+                fprintf(file, "\tjmp .L%d\n", label_fin); // "Jump" inconditionnel
+                
+                // On place l'étiquette du ELSE
+                fprintf(file, ".L%d:\n", label_else);
+                
+                // On génère le code du bloc ELSE
+                write_asm_instr(file, node->firstChild->nextSibling->nextSibling);
+                
+                // On place l'étiquette de FIN
+                fprintf(file, ".L%d:\n", label_fin);
+            } 
+            else {
+                // S'il n'y a pas de ELSE, label_else sert juste d'étiquette de fin
+                fprintf(file, ".L%d:\n", label_else);
+            }
+            break;
+        }
+        case T_WHILE: {
+            int label_debut = newlabel();
+            int label_fin = newlabel();
+
+            // 1. On place l'étiquette de début pour pouvoir y revenir
+            fprintf(file, ".L%d:\n", label_debut);
+
+            // 2. On évalue la condition (le fils gauche)
+            write_asm_expr(file, node->firstChild);
+
+            // 3. On teste le résultat
+            fprintf(file, "\tpop rax\n");
+            fprintf(file, "\tcmp rax, 0\n");
+            fprintf(file, "\tje .L%d\n", label_fin); // Si c'est 0 (Faux), on SORT de la boucle
+
+            // 4. On génère le code du corps de la boucle (le fils droit)
+            write_asm_instr(file, node->firstChild->nextSibling);
+
+            // 5. Fin du tour de boucle : on retourne inconditionnellement au début
+            fprintf(file, "\tjmp .L%d\n", label_debut);
+
+            // 6. On place l'étiquette de sortie de boucle
             fprintf(file, ".L%d:\n", label_fin);
             break;
         }
-
         case T_ASSIGN: {
             write_asm_expr(file, node->firstChild->nextSibling);
             Node *var_node = node->firstChild;
@@ -181,9 +222,19 @@ static void write_asm_instr(FILE * file, Node * node){
             }
             break;
         }
-
+        case T_RETURN:
+            if (node->firstChild != NULL) {
+                write_asm_expr(file, node->firstChild);
+                fprintf(file, "\tpop rax\n");
+                fprintf(file, "\tmov rdi, rax\n");
+            } 
+            else {
+                fprintf(file, "\tmov rdi, 0\n");
+            }
+            fprintf(file, "\tmov rax, 60\n");
+            fprintf(file, "\tsyscall\n");
+            break;
         default:
-            // Pour descendre dans les blocs (T_BODY, suites d'instructions...)
             for (Node *child = node->firstChild; child != NULL; child = child->nextSibling) {
                 write_asm_instr(file, child);
             }

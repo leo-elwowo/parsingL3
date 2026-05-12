@@ -1,16 +1,15 @@
-int th_level;
-int electro_dragon_unlocked;
+int i;
+int somme;
 
 int main(void) {
-    th_level = 11;
-    electro_dragon_unlocked = 1;
+    i = 4;
+    somme = 0;
     
-    // th_level - 11 vaut 0, donc la condition est fausse
-    if (th_level - 11) { 
-        electro_dragon_unlocked = 0; 
+    // Tant que i n'est pas égal à 0
+    while (i) { 
+        somme = somme + 10; // On ajoute 10 à la somme
+        i = i - 1;          // On décrémente i
     }
     
-    return electro_dragon_unlocked; 
+    return somme; // Devrait renvoyer 40 !
 }
-
-//COC MDR ? 
