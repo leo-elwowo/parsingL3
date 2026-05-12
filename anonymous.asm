@@ -2,9 +2,23 @@ global _start
 section .text
 _start:
 	push 12
+    pop rax
+    mov [somme], rax
 	push 24
+    pop rax
+    mov [produit], rax
 	push 24
 	push 12
+    pop rax
+    mov [quotient], rax
+    pop rax
+    mov [letter], rax
+    pop rax
+    mov [digit], rax
+    pop rax
+    mov [uppercase], rax
+    pop rax
+    mov [reste], rax
 mov rax, 60
 mov rdi, 0
 syscall
