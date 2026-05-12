@@ -46,6 +46,9 @@ int init_table(HashTable ** tab){
 }
 
 static Symbol * check_if_present_and_move_to_head_then(Bucket * bucket, const char * ident){
+    /*
+    renvoit le symbol s'il est présent, renvoit null sinon
+    */
     //bucket pointer parce qu'on pourrait le remettre en tete l'ident
     Bucket prev = NULL;
     Bucket curr = *bucket;
@@ -69,6 +72,10 @@ static Symbol * check_if_present_and_move_to_head_then(Bucket * bucket, const ch
 }
 
 Symbol* search_value(const char * ident, HashTable * tab) {
+    /*
+    renvoit le symbol correspondant à l'ident placé en paramètre
+    renvoit NULL s'il nest pas présent
+    */
     if (tab == NULL) return NULL;
     unsigned int hf_index = hfunc(ident);
     return check_if_present_and_move_to_head_then(&tab->elt[hf_index], ident);

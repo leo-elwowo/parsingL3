@@ -91,6 +91,13 @@ static Type infer_node_type(Node * node){
         case T_CHARACTER:
         return TYPE_CHAR;
         case T_IDENT:
+        Symbol * s_ident = search_value(node->ident, local_table);
+        
+        if (!s_ident)
+            s_ident = search_value(node->ident, global_table);
+        if (!s_ident)
+            return TYPE_INT;
+        return s_ident->type;
         break;
         default:
         return TYPE_INT;
@@ -207,6 +214,10 @@ void sem(Node *node) {
             
             break;
         case T_ASSIGN:
+            if (infer_node_type(node->firstChild) == TYPE_CHAR && infer_node_type(node->firstChild->nextSibling) == TYPE_INT) {
+                fprintf(stderr, "Avertissement sémantique : affectation d'une expression 'int' à une variable 'char' (ligne %d)\n", node->lineno);
+            }
+
             write_asm_expr(nasm_output, node);
             break;
         default:
