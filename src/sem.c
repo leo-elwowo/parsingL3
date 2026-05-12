@@ -152,6 +152,9 @@ void sem(Node *node) {
             if (type_node == NULL || (type_node->label != T_TYPE && type_node->label != T_TYPE_STRUCT)) break;
 
             Type current_type = TYPE_INT;
+            if (type_node->label == T_TYPE && strcmp(type_node->ident, "char") == 0) 
+                current_type = TYPE_CHAR;
+            
             HashTable *target_table = (local_table != NULL) ? local_table : global_table;
 
 
@@ -175,7 +178,11 @@ void sem(Node *node) {
             Node *type_node = node->firstChild;
             Node *var_node = type_node != NULL ? type_node->nextSibling : NULL;
             if (var_node != NULL && var_node->label == T_IDENT) {
-                insert_value(var_node->ident, TYPE_INT, current_offset, local_table);
+                Type param_type = TYPE_INT;
+                if (type_node != NULL && type_node->label == T_TYPE && strcmp(type_node->ident, "char") == 0) {
+                    param_type = TYPE_CHAR;
+                }
+                insert_value(var_node->ident, param_type, current_offset, local_table);
                 current_offset -= 8;
             }
             break;
