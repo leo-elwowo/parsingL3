@@ -328,8 +328,8 @@ void sem(Node *node) {
     
 
     if (node->label == T_FUNC) {
-        // free_table(local_table); 
-        // local_table = NULL;
+        free_table(local_table); 
+        local_table = NULL;
     }
 
     if (node->label == T_PROG) {
