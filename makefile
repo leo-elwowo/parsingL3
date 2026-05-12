@@ -46,3 +46,4 @@ test_asm: bin/tpcas
 	nasm -f elf64 anonymous.asm
 	ld -o $(BINARY) anonymous.o
 	./$(BINARY)
+	

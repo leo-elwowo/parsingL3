@@ -71,7 +71,33 @@ static void write_asm_expr(FILE * file, Node * node){
             fprintf(file, "    sub rax, rbx\n");
             fprintf(file, "    push rax\n");
         }
+        //note : faire le +  asap
         break;
+        case T_IDENT:
+
+        //si notre ident est une variable globale (donc presente dans la table des symboles)
+        //on va faire ca
+        Symbol *s_read = search_value(node->ident, global_table);
+        if (s_read != NULL) {
+            fprintf(file, "\tmov rax, [%s]\n", s_read->ident);
+            fprintf(file, "\tpush rax\n");
+        }
+        break;
+
+        case T_ASSIGN: 
+        write_asm_expr(file, node->firstChild->nextSibling);
+        
+        Node *var_node = node->firstChild;
+        
+        if (var_node->label == T_IDENT) {
+            Symbol *s_assign = search_value(var_node->ident, global_table);
+            if (s_assign != NULL) {
+                fprintf(file, "    pop rax\n");
+                fprintf(file, "    mov [%s], rax\n", s_assign->ident);
+            }
+        }
+        break;
+        
         default:
         //ici c'est juste pr si nos enfants doivent etre parcourus
         //à implementer
@@ -111,7 +137,7 @@ void sem(Node *node) {
     if (!node) return;
     
     //décommenter cette ligne pour afficher le parcours de l'arbre
-    printf("current node : %s\n", StringFromLabel_suppr_juste_pour_print[node->label]);
+    //printf("current node : %s\n", StringFromLabel_suppr_juste_pour_print[node->label]);
     
     
 
@@ -134,8 +160,9 @@ void sem(Node *node) {
             */
             init_table(&local_table);
             current_offset = 0; 
-            if (!strcmp(node->firstChild->firstChild->nextSibling->ident, "main")){ //je devrais utiliser fprintf je suis baka
-                fwrite("global _start\nsection .text\nstart:\n",sizeof(char), 35, nasm_output);
+            if (!strcmp(node->firstChild->firstChild->nextSibling->ident, "main")){
+
+                fprintf(nasm_output, "global _start\nsection .text\n_start:\n");
             }
             sem(node->firstChild);                  //sem HEADER
             sem(node->firstChild->nextSibling);     //sem BODY
@@ -222,7 +249,7 @@ void sem(Node *node) {
             break;
         case T_ASSIGN:
 
-            fprintf(stderr, "assigning %s to %s (%s <-- %s)\n", node->firstChild->ident, node->firstChild->nextSibling->ident, node->firstChild->ident, node->firstChild->nextSibling->ident);    
+            //fprintf(stderr, "assigning %s to %s (%s <-- %s)\n", node->firstChild->ident, node->firstChild->nextSibling->ident, node->firstChild->ident, node->firstChild->nextSibling->ident);    
 
             sem(node->firstChild);
             sem(node->firstChild->nextSibling);    
@@ -266,6 +293,10 @@ void sem(Node *node) {
     if (node->label == T_FUNC) {
         // free_table(local_table); 
         // local_table = NULL;
+    }
+
+    if (node->label == T_PROG) {
+        write_asm_global_variables(global_table, nasm_output);
     }
 
     if (printsymb) {

@@ -1,6 +1,7 @@
 #ifndef SYMBOLS
 #define SYMBOLS
 #include "identsize.h"
+#include <stdio.h>
 #define N 1008
 #define K 613
 
@@ -52,5 +53,7 @@ Symbol* search_value(const char * ident, HashTable * tab);
 void free_table(HashTable * tab);
 
 void print_table(HashTable * tab, const char * table_name); //pour mon plaisir personnel miam
+
+void write_asm_global_variables(HashTable * tab, FILE * file);
 
 #endif

@@ -157,3 +157,18 @@ int main(void){
     insert_value("abcd", TYPE_CHAR, table);
 }
 */
+
+void write_asm_global_variables(HashTable * tab, FILE * file) {
+    if (tab == NULL || tab->size == 0) return;
+    fprintf(file, "section .bss\n");
+    for (int i = 0; i < tab->cap; i++) {
+        Bucket tmp = tab->elt[i];
+        while (tmp != NULL) {
+            fprintf(file, "\t%s: resq 1\n", tmp->val->ident);
+            tmp = tmp->prochain;
+        }
+    }
+    fprintf(file, "\n");
+}
+
+
