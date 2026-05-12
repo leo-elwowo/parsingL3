@@ -214,6 +214,12 @@ void sem(Node *node) {
             
             break;
         case T_ASSIGN:
+
+            fprintf(stderr, "assigning %s to %s (%s <-- %s)\n", node->firstChild->ident, node->firstChild->nextSibling->ident, node->firstChild->ident, node->firstChild->nextSibling->ident);    
+
+            sem(node->firstChild);
+            sem(node->firstChild->nextSibling);    
+
             if (infer_node_type(node->firstChild) == TYPE_CHAR && infer_node_type(node->firstChild->nextSibling) == TYPE_INT) {
                 fprintf(stderr, "Avertissement sémantique : affectation d'une expression 'int' à une variable 'char' (ligne %d)\n", node->lineno);
             }
