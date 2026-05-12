@@ -45,5 +45,6 @@ test_asm: bin/tpcas
 	./bin/tpcas < gen-code-types.tpc
 	nasm -f elf64 anonymous.asm
 	ld -o $(BINARY) anonymous.o
-	./$(BINARY)
+	./$(BINARY) 
+	echo "ret = $$?"
 	

@@ -56,22 +56,61 @@ static void write_asm_expr(FILE * file, Node * node){
         return;
     
     switch (node->label) {
+        /*
+        case T_RETURN:
+        
+        break;
+        */
         case T_NUM:
+        fprintf(file, "\t;mise sur la pile du nombre '%d'\n", node->num);
         fprintf(file, "\tpush %d\n", node->num);
         break;
+        case T_CHARACTER:
+        fprintf(file, "\t;mise sur la pile du caractère '%c'\n", node->character);
+        fprintf(file, "\tpush %d\n", node->character);
+        break;
         case T_ADDSUB:
+        
+        //si c'est une soustraction on fait ca
+        //fprintf(file, "\t;on traite la soustraction\n");
+        write_asm_expr(file, node->firstChild);    //on va push la partie gauche
+        write_asm_expr(file, node->firstChild->nextSibling);    //push la droite
+        //et apres on la depile dans rbx et rax
+        fprintf(file, "\tpop rbx\n");
+        fprintf(file, "\tpop rax\n");
         if (node->byte == '-'){
-            //si c'est une soustraction on fait ca
-            write_asm_expr(file, node->firstChild);    //on va push la partie gauche
-            write_asm_expr(file, node->firstChild->nextSibling);    //push la droite
-
-            //et apres on la depile dans rbx et rax
-            fprintf(file, "    pop rbx\n");
-            fprintf(file, "    pop rax\n");
-            fprintf(file, "    sub rax, rbx\n");
-            fprintf(file, "    push rax\n");
+            fprintf(file, "\tsub rax, rbx\n");
         }
-        //note : faire le +  asap
+        else{
+            fprintf(file, "\tadd rax, rbx\n");
+        }
+        fprintf(file, "\tpush rax\n");
+        
+        //note : faire le + asap
+        break;
+        case T_DIVSTAR:
+        /*
+        ici on va gérer l'écriture dans le programme des opérations * et /
+        il faut le faire aussi
+        */
+        write_asm_expr(file, node->firstChild);    //on va push la partie gauche
+        write_asm_expr(file, node->firstChild->nextSibling);    //push la droite
+        //et apres on la depile dans rbx et rax
+        fprintf(file, "\tpop rbx\n");
+        fprintf(file, "\tpop rax\n");
+        if (node->byte == '*'){
+            //pour faire imul
+            fprintf(file, "\timul rax, rbx\n");
+            fprintf(file, "\tpush rax\n");    
+        }
+        else{
+
+            //pour faire idiv, mais je suis pas sur que ce soit la bonne facon
+            fprintf(file, "\txor rdx, rdx\n");
+            fprintf(file, "\tidiv rbx\n");
+            fprintf(file, "\tpush rax\n");    
+        }
+        
         break;
         case T_IDENT:
 
@@ -92,15 +131,14 @@ static void write_asm_expr(FILE * file, Node * node){
         if (var_node->label == T_IDENT) {
             Symbol *s_assign = search_value(var_node->ident, global_table);
             if (s_assign != NULL) {
-                fprintf(file, "    pop rax\n");
-                fprintf(file, "    mov [%s], rax\n", s_assign->ident);
+                fprintf(file, "\tpop rax\n");
+                fprintf(file, "\tmov [%s], rax\n", s_assign->ident);
             }
         }
         break;
         
         default:
         //ici c'est juste pr si nos enfants doivent etre parcourus
-        //à implementer
         for (Node *child = node->firstChild; child != NULL; child = child->nextSibling) {
             write_asm_expr(file, child);
         }
@@ -109,7 +147,7 @@ static void write_asm_expr(FILE * file, Node * node){
     return;
 }
 
-//je dois écrire une fonction qui prend un noeud et qui détermine son type
+//une fonction qui prend un noeud et qui détermine son type
 static Type infer_node_type(Node * node){
     switch(node->label){
         case T_NUM:
@@ -118,7 +156,6 @@ static Type infer_node_type(Node * node){
         return TYPE_CHAR;
         case T_IDENT:
         Symbol * s_ident = search_value(node->ident, local_table);
-        
         if (!s_ident)
             s_ident = search_value(node->ident, global_table);
         if (!s_ident)
@@ -137,7 +174,7 @@ void sem(Node *node) {
     if (!node) return;
     
     //décommenter cette ligne pour afficher le parcours de l'arbre
-    //printf("current node : %s\n", StringFromLabel_suppr_juste_pour_print[node->label]);
+    printf("current node : %s\n", StringFromLabel_suppr_juste_pour_print[node->label]);
     
     
 
@@ -162,7 +199,7 @@ void sem(Node *node) {
             current_offset = 0; 
             if (!strcmp(node->firstChild->firstChild->nextSibling->ident, "main")){
 
-                fprintf(nasm_output, "global _start\nsection .text\n_start:\n");
+                fprintf(nasm_output, "section .text\nglobal _start\n_start:\n");
             }
             sem(node->firstChild);                  //sem HEADER
             sem(node->firstChild->nextSibling);     //sem BODY
