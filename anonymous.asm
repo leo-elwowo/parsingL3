@@ -1,71 +1,52 @@
 section .text
 global _start
 _start:
-	mov rax, [i]
+	mov rax, [th_level]
 	push rax
-	;mise sur la pile du nombre '4'
-	push 4
-	mov rax, [somme]
+	;mise sur la pile du nombre '11'
+	push 11
+	mov rax, [a_assez_or]
+	push rax
+	;mise sur la pile du nombre '1'
+	push 1
+	mov rax, [peut_ameliorer]
+	push rax
+	;mise sur la pile du nombre '1'
+	push 1
+	mov rax, [peut_ameliorer]
 	push rax
 	;mise sur la pile du nombre '0'
 	push 0
-	mov rax, [somme]
-	push rax
-	mov rax, [somme]
+	;mise sur la pile du nombre '11'
+	push 11
+	pop rax
+	mov [th_level], rax
+	;mise sur la pile du nombre '1'
+	push 1
+	pop rax
+	mov [a_assez_or], rax
+	mov rax, [th_level]
 	push rax
 	;mise sur la pile du nombre '10'
 	push 10
 	pop rbx
 	pop rax
-	add rax, rbx
-	push rax
-	mov rax, [i]
-	push rax
-	mov rax, [i]
-	push rax
-	;mise sur la pile du nombre '1'
-	push 1
-	pop rbx
-	pop rax
-	sub rax, rbx
-	push rax
-	;mise sur la pile du nombre '4'
-	push 4
-	pop rax
-	mov [i], rax
-	;mise sur la pile du nombre '0'
-	push 0
-	pop rax
-	mov [somme], rax
+	cmp rax, rbx
+	jmp .L2
+.L3:
 .L1:
-	mov rax, [i]
-	push rax
-	pop rax
-	cmp rax, 0
-	je .L2
-	mov rax, [somme]
-	push rax
-	;mise sur la pile du nombre '10'
-	push 10
-	pop rbx
-	pop rax
-	add rax, rbx
-	push rax
-	pop rax
-	mov [somme], rax
-	mov rax, [i]
-	push rax
 	;mise sur la pile du nombre '1'
 	push 1
-	pop rbx
 	pop rax
-	sub rax, rbx
-	push rax
-	pop rax
-	mov [i], rax
-	jmp .L1
+	mov [peut_ameliorer], rax
+	jmp .L4
 .L2:
-	mov rax, [somme]
+	;mise sur la pile du nombre '0'
+	push 0
+	pop rax
+	mov [peut_ameliorer], rax
+.L4:
+	mov rax, [peut_ameliorer]
 	push rax
 	pop rax
 	mov rdi, rax
@@ -75,6 +56,7 @@ mov rax, 60
 mov rdi, 0
 syscall
 section .bss
-	somme: resq 1
-	i: resq 1
+	th_level: resq 1
+	peut_ameliorer: resq 1
+	a_assez_or: resq 1
 

@@ -1,15 +1,18 @@
-int i;
-int somme;
+int th_level;
+int a_assez_or;
+int peut_ameliorer;
 
 int main(void) {
-    i = 4;
-    somme = 0;
+    th_level = 11;
+    a_assez_or = 1;
     
-    // Tant que i n'est pas égal à 0
-    while (i) { 
-        somme = somme + 10; // On ajoute 10 à la somme
-        i = i - 1;          // On décrémente i
+    // Test du AND (les deux doivent être vrais)
+    // Comme a_assez_or vaut 0, ça doit court-circuiter et aller dans le else
+    if (th_level > 10 && a_assez_or) {
+        peut_ameliorer = 1;
+    } else {
+        peut_ameliorer = 0;
     }
     
-    return somme; // Devrait renvoyer 40 !
+    return peut_ameliorer;
 }

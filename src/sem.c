@@ -141,72 +141,99 @@ static void write_asm_expr(FILE * file, Node * node){
     return;
 }
 
+static void write_asm_bool(FILE *file, Node *node, int label_true, int label_false) {
+    if (!node) return;
+
+    switch (node->label) {
+        case T_EQ:
+            write_asm_expr(file, node->firstChild);
+            write_asm_expr(file, node->firstChild->nextSibling);
+
+
+            fprintf(file, "\tpop rbx\n");
+            fprintf(file, "\tpop rax\n");
+            fprintf(file, "\tcmp rax, rbx\n");
+
+            fprintf(file, "\tje .L%d\n", label_true); 
+
+            fprintf(file, "\tjmp .L%d\n", label_false);
+            break;
+
+        case T_ORDER:
+            write_asm_expr(file, node->firstChild);
+            write_asm_expr(file, node->firstChild->nextSibling);
+            fprintf(file, "\tpop rbx\n");
+            fprintf(file, "\tpop rax\n");
+            fprintf(file, "\tcmp rax, rbx\n");
+            if (node->byte == '<') {
+                fprintf(file, "\tjl .L%d\n", label_true);  
+            } else if (node->byte == '>') {
+                fprintf(file, "\tjg .L%d\n", label_true);  
+            }
+            fprintf(file, "\tjmp .L%d\n", label_false); 
+            break;
+        case T_NOT:
+            write_asm_bool(file, node->firstChild, label_false, label_true);
+            break;
+
+        case T_AND: {
+            int label_next = newlabel();
+            write_asm_bool(file, node->firstChild, label_next, label_false);
+            fprintf(file, ".L%d:\n", label_next);
+            write_asm_bool(file, node->firstChild->nextSibling, label_true, label_false);
+            break;
+        }
+
+        case T_OR: {
+            int label_next = newlabel();
+            write_asm_bool(file, node->firstChild, label_true, label_next);
+            fprintf(file, ".L%d:\n", label_next);
+            write_asm_bool(file, node->firstChild->nextSibling, label_true, label_false);
+            break;
+        }
+        default:
+            fprintf(stderr, "Erreur : Expression booléenne non supportée\n");
+            break;
+    }
+}
+
 static void write_asm_instr(FILE * file, Node * node){
     /*
     oui oui oui je sais je suis très vilain vu que nasmoutput 
     est le fichier de sortie je pourrais enlever l'argument file
+    mais je vais surement mettre ces fonctions dans un module
+     dédié ou j'aurai peut être pas le nasmoutput
     */
     if (!node) return;
 
     switch (node->label) {
         case T_IF: {
-            int label_else = newlabel(); // Étiquette pour aller au ELSE (ou à la fin si pas de else)
-            
-            // 1. Évaluer la condition (fils gauche)
-            write_asm_expr(file, node->firstChild);
-
-            // 2. Tester le résultat
-            fprintf(file, "\tpop rax\n");
-            fprintf(file, "\tcmp rax, 0\n");
-            fprintf(file, "\tje .L%d\n", label_else); // Si 0 (Faux), on saute à label_else
-
-            // 3. Bloc IF (Vrai) : le 2ème enfant
+            int label_true = newlabel();
+            int label_false = newlabel();
+            write_asm_bool(file, node->firstChild, label_true, label_false);
+            fprintf(file, ".L%d:\n", label_true);
             write_asm_instr(file, node->firstChild->nextSibling);
-
-            // 4. On vérifie s'il y a un bloc ELSE (un 3ème enfant)
             if (node->firstChild->nextSibling->nextSibling != NULL) {
-                int label_fin = newlabel(); // On a besoin d'une 2ème étiquette pour la fin
-                
-                // À la fin du bloc IF, on saute par-dessus le bloc ELSE
-                fprintf(file, "\tjmp .L%d\n", label_fin); // "Jump" inconditionnel
-                
-                // On place l'étiquette du ELSE
-                fprintf(file, ".L%d:\n", label_else);
-                
-                // On génère le code du bloc ELSE
+                int label_fin = newlabel();
+                fprintf(file, "\tjmp .L%d\n", label_fin);
+                fprintf(file, ".L%d:\n", label_false);
                 write_asm_instr(file, node->firstChild->nextSibling->nextSibling);
-                
-                // On place l'étiquette de FIN
                 fprintf(file, ".L%d:\n", label_fin);
             } 
             else {
-                // S'il n'y a pas de ELSE, label_else sert juste d'étiquette de fin
-                fprintf(file, ".L%d:\n", label_else);
+                fprintf(file, ".L%d:\n", label_false);
             }
             break;
         }
         case T_WHILE: {
             int label_debut = newlabel();
+            int label_corps = newlabel();
             int label_fin = newlabel();
-
-            // 1. On place l'étiquette de début pour pouvoir y revenir
             fprintf(file, ".L%d:\n", label_debut);
-
-            // 2. On évalue la condition (le fils gauche)
-            write_asm_expr(file, node->firstChild);
-
-            // 3. On teste le résultat
-            fprintf(file, "\tpop rax\n");
-            fprintf(file, "\tcmp rax, 0\n");
-            fprintf(file, "\tje .L%d\n", label_fin); // Si c'est 0 (Faux), on SORT de la boucle
-
-            // 4. On génère le code du corps de la boucle (le fils droit)
+            write_asm_bool(file, node->firstChild, label_corps, label_fin);
+            fprintf(file, ".L%d:\n", label_corps);
             write_asm_instr(file, node->firstChild->nextSibling);
-
-            // 5. Fin du tour de boucle : on retourne inconditionnellement au début
-            fprintf(file, "\tjmp .L%d\n", label_debut);
-
-            // 6. On place l'étiquette de sortie de boucle
+            fprintf(file, "\tjmp .L%d\n", label_debut); 
             fprintf(file, ".L%d:\n", label_fin);
             break;
         }
