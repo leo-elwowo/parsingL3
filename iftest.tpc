@@ -4,7 +4,7 @@ int peut_ameliorer;
 
 int main(void) {
     th_level = 11;
-    a_assez_or = 1;
+    a_assez_or = 1111;
     
     // Test du AND (les deux doivent être vrais)
     // Comme a_assez_or vaut 0, ça doit court-circuiter et aller dans le else

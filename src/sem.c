@@ -192,7 +192,12 @@ static void write_asm_bool(FILE *file, Node *node, int label_true, int label_fal
             break;
         }
         default:
-            fprintf(stderr, "Erreur : Expression booléenne non supportée\n");
+            write_asm_expr(file, node);
+            fprintf(file, "\tpop rax\n");
+            fprintf(file, "\tcmp rax, 0\n");
+
+            fprintf(file, "\tjne .L%d\n", label_true);
+            fprintf(file, "\tjmp .L%d\n", label_false);
             break;
     }
 }
@@ -417,7 +422,7 @@ void sem(Node *node) {
                 fprintf(stderr, "Avertissement sémantique : affectation d'une expression 'int' à une variable 'char' (ligne %d)\n", node->lineno);
             }
 
-            write_asm_expr(nasm_output, node);
+            //write_asm_expr(nasm_output, node);
             break;
         default:
             break;
