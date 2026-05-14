@@ -47,14 +47,15 @@ static const char *StringFromLabel_suppr_juste_pour_print[] = {
   "VOID"
 };
 
-static void write_end_syscall(){
-    fwrite( "mov rax, 60\nmov rdi, 0\nsyscall\n", sizeof(char), 31,nasm_output);
-}
+
 
 static int newlabel(){
     static int i = 0;
     return ++i;
 }
+
+static void write_asm_bool(FILE *file, Node *node, int label_true, int label_false);
+//parce que sinon write_asm_expr ne la trouvera pas
 
 static void write_asm_expr(FILE * file, Node * node){
     if (!node)
@@ -66,6 +67,31 @@ static void write_asm_expr(FILE * file, Node * node){
         
         break;
         */
+        case T_EQ:
+        case T_ORDER:
+        case T_AND:
+        case T_OR:
+        case T_NOT: {
+            int label_true = newlabel();
+            int label_false = newlabel();
+            int label_fin = newlabel();
+
+            // 1. On confie l'évaluation paresseuse à notre fonction dédiée
+            write_asm_bool(file, node, label_true, label_false);
+
+            // 2. Si l'expression atterrit ici, c'est VRAI : on empile 1
+            fprintf(file, ".L%d:\n", label_true);
+            fprintf(file, "\tpush 1\n");
+            fprintf(file, "\tjmp .L%d\n", label_fin); // On saute à la fin
+
+            // 3. Si l'expression atterrit ici, c'est FAUX : on empile 0
+            fprintf(file, ".L%d:\n", label_false);
+            fprintf(file, "\tpush 0\n");
+
+            // 4. Point de chute final pour que le calcul reprenne
+            fprintf(file, ".L%d:\n", label_fin);
+            break;
+        }
         case T_NUM:
         fprintf(file, "\t;mise sur la pile du nombre '%d'\n", node->num);
         fprintf(file, "\tpush %d\n", node->num);
@@ -121,16 +147,38 @@ static void write_asm_expr(FILE * file, Node * node){
         
         break;
         case T_IDENT:
-
+        Symbol *s_read = search_value(node->ident, local_table);
+        if (s_read != NULL) {
+            fprintf(file, "\tmov rax, [rbp%+d]\n", s_read->deplct);
+            fprintf(file, "\tpush rax\n");
+            break;
+        }
         //si notre ident est une variable globale (donc presente dans la table des symboles)
         //on va faire ca
-        Symbol *s_read = search_value(node->ident, global_table);
+        s_read = search_value(node->ident, global_table);
         if (s_read != NULL) {
             fprintf(file, "\tmov rax, [%s]\n", s_read->ident);
             fprintf(file, "\tpush rax\n");
         }
         break;
-        
+        case T_FCALL: {
+            char *func_name = node->firstChild->ident;
+            Node *args_list = node->firstChild->nextSibling;
+            int arg_count = 0;
+            if (args_list != NULL && args_list->label == T_LIST) {
+                for (Node *arg = args_list->firstChild; arg != NULL; arg = arg->nextSibling) {
+                    write_asm_expr(file, arg);
+                    arg_count++;
+                }
+            }
+            const char* regs[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
+            for (int i = arg_count - 1; i >= 0; i--) {
+                fprintf(file, "\tpop %s\n", regs[i]);
+            }
+            fprintf(file, "\tcall %s\n", func_name);
+            fprintf(file, "\tpush rax\n");
+            break;
+        }
         default:
         //ici c'est juste pr si nos enfants doivent etre parcourus
         for (Node *child = node->firstChild; child != NULL; child = child->nextSibling) {
@@ -149,26 +197,31 @@ static void write_asm_bool(FILE *file, Node *node, int label_true, int label_fal
             write_asm_expr(file, node->firstChild);
             write_asm_expr(file, node->firstChild->nextSibling);
 
-
             fprintf(file, "\tpop rbx\n");
             fprintf(file, "\tpop rax\n");
             fprintf(file, "\tcmp rax, rbx\n");
-
-            fprintf(file, "\tje .L%d\n", label_true); 
-
+            if (strcmp(node->comp, "==") == 0) {
+                fprintf(file, "\tje .L%d\n", label_true); 
+            } else if (strcmp(node->comp, "!=") == 0) {
+                fprintf(file, "\tjne .L%d\n", label_true);
+            }
             fprintf(file, "\tjmp .L%d\n", label_false);
             break;
-
         case T_ORDER:
             write_asm_expr(file, node->firstChild);
             write_asm_expr(file, node->firstChild->nextSibling);
+            
             fprintf(file, "\tpop rbx\n");
             fprintf(file, "\tpop rax\n");
             fprintf(file, "\tcmp rax, rbx\n");
-            if (node->byte == '<') {
+            if (strcmp(node->comp, "<") == 0) {
                 fprintf(file, "\tjl .L%d\n", label_true);  
-            } else if (node->byte == '>') {
+            } else if (strcmp(node->comp, ">") == 0) {
                 fprintf(file, "\tjg .L%d\n", label_true);  
+            } else if (strcmp(node->comp, "<=") == 0) {
+                fprintf(file, "\tjle .L%d\n", label_true);  
+            } else if (strcmp(node->comp, ">=") == 0) {
+                fprintf(file, "\tjge .L%d\n", label_true);  
             }
             fprintf(file, "\tjmp .L%d\n", label_false); 
             break;
@@ -246,25 +299,36 @@ static void write_asm_instr(FILE * file, Node * node){
             write_asm_expr(file, node->firstChild->nextSibling);
             Node *var_node = node->firstChild;
             if (var_node->label == T_IDENT) {
-                Symbol *s_assign = search_value(var_node->ident, global_table);
-                if (s_assign != NULL) {
-                    fprintf(file, "\tpop rax\n");
-                    fprintf(file, "\tmov [%s], rax\n", s_assign->ident);
+                fprintf(file, "\tpop rax\n");
+
+                Symbol *s_local = search_value(var_node->ident, local_table);
+                if (s_local != NULL) {
+                    fprintf(file, "\tmov [rbp%+d], rax\n", s_local->deplct);
+                } 
+                else {
+
+                    Symbol *s_global = search_value(var_node->ident, global_table);
+                    if (s_global != NULL) {
+                        fprintf(file, "\tmov [%s], rax\n", s_global->ident);
+                    }
                 }
             }
             break;
         }
+        case T_FCALL:
+
+            write_asm_expr(file, node);
+
+            fprintf(file, "\tpop rax\n"); 
+            break;
         case T_RETURN:
             if (node->firstChild != NULL) {
                 write_asm_expr(file, node->firstChild);
                 fprintf(file, "\tpop rax\n");
-                fprintf(file, "\tmov rdi, rax\n");
-            } 
-            else {
-                fprintf(file, "\tmov rdi, 0\n");
             }
-            fprintf(file, "\tmov rax, 60\n");
-            fprintf(file, "\tsyscall\n");
+            fprintf(file, "\tmov rsp, rbp\n");
+            fprintf(file, "\tpop rbp\n");
+            fprintf(file, "\tret\n");
             break;
         default:
             for (Node *child = node->firstChild; child != NULL; child = child->nextSibling) {
@@ -308,6 +372,11 @@ void sem(Node *node) {
     switch (node->label) {
         case T_PROG:
             init_table(&global_table);
+            fprintf(nasm_output, "section .text\nglobal _start\n_start:\n");
+            fprintf(nasm_output, "\tcall main\n");
+            fprintf(nasm_output, "\tmov rdi, rax\n");
+            fprintf(nasm_output, "\tmov rax, 60\n");
+            fprintf(nasm_output, "\tsyscall\n\n");
             break;
 
         case T_FUNC:
@@ -323,17 +392,31 @@ void sem(Node *node) {
             if the name of the function is main, we write the basic asm instructions
             */
             init_table(&local_table);
-            current_offset = 0; 
-            if (!strcmp(node->firstChild->firstChild->nextSibling->ident, "main")){
-                fprintf(nasm_output, "section .text\nglobal _start\n_start:\n");
+            current_offset = -8; 
+            char *func_name = node->firstChild->firstChild->nextSibling->ident;
+
+            fprintf(nasm_output, "%s:\n", func_name);
+            fprintf(nasm_output, "\tpush rbp\n");
+            fprintf(nasm_output, "\tmov rbp, rsp\n");
+            sem(node->firstChild);
+            sem(node->firstChild->nextSibling);
+            if (current_offset < 0) {
+                fprintf(nasm_output, "\tsub rsp, %d\n", -current_offset);
             }
-            sem(node->firstChild);                  //sem HEADER
-            sem(node->firstChild->nextSibling);     //sem BODY
-            if (!strcmp(node->firstChild->firstChild->nextSibling->ident, "main")){
-                write_asm_instr(nasm_output, node->firstChild->nextSibling);
-                write_end_syscall();
+            Node *param_list = node->firstChild->firstChild->nextSibling->nextSibling; 
+            if (param_list != NULL && param_list->label == T_LIST) {
+                const char* regs[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
+                int param_idx = 0;
+                for (Node *p = param_list->firstChild; p != NULL; p = p->nextSibling) {
+                    fprintf(nasm_output, "\tmov [rbp-%d], %s\n", (param_idx + 1) * 8, regs[param_idx]);
+                    param_idx++;
+                }
             }
-            break;
+
+            write_asm_instr(nasm_output, node->firstChild->nextSibling);
+            fprintf(nasm_output, "\tmov rsp, rbp\n");
+            fprintf(nasm_output, "\tpop rbp\n");
+            fprintf(nasm_output, "\tret\n\n");
         case T_DECL_VARS: 
         {
             Node *list1 = node->firstChild;

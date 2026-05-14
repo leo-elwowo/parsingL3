@@ -1,18 +1,19 @@
-int th_level;
-int a_assez_or;
-int peut_ameliorer;
+int globale_multiplicateur;
+
+// Une fonction qui fait un calcul avec des arguments
+int calculer_degats(int attaque, int bonus) {
+    int total;
+    total = attaque + bonus;
+    return total * globale_multiplicateur;
+}
 
 int main(void) {
-    th_level = 11;
-    a_assez_or = 1111;
+    int degats_finaux;
     
-    // Test du AND (les deux doivent être vrais)
-    // Comme a_assez_or vaut 0, ça doit court-circuiter et aller dans le else
-    if (th_level > 10 && a_assez_or) {
-        peut_ameliorer = 1;
-    } else {
-        peut_ameliorer = 0;
-    }
+    globale_multiplicateur = 2; // Coup critique !
     
-    return peut_ameliorer;
+    // Appel avec des arguments
+    degats_finaux = calculer_degats(10, 5); 
+    
+    return degats_finaux; // Devrait renvoyer 30 ( (10+5) * 2 )
 }

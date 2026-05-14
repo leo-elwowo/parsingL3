@@ -39,12 +39,11 @@ obj/lex.yy.o: obj/lex.yy.c
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 clean:
-	rm -rf obj bin
+	rm -rf obj bin compiled anonymous.*
 
 test_asm: bin/tpcas
 	./bin/tpcas < iftest.tpc
 	nasm -f elf64 anonymous.asm
 	ld -o $(BINARY) anonymous.o
 	-./$(BINARY) ; echo "ret = $$?"
-	
 	
