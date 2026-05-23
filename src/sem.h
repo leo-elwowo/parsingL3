@@ -4,7 +4,7 @@
 
 void sem(Node *node);
 
-
+extern int nberror_sem;
 
 
 #endif

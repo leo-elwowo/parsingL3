@@ -9,6 +9,7 @@
 int yylex();
 void yyerror(const char *s);
 extern int lineno;
+extern int nberror_sem;
 int nberror = 0;
 int printsymb = 0;
 FILE * nasm_output;
@@ -417,25 +418,25 @@ int main(int argc, char **argv) {
         if (strcmp(argv[i], "-t") == 0 || strcmp(argv[i], "--tree") == 0) {
             print_tree_bool = 1;
         }
-        else if (strcmp(argv[i], "-s") == 0 || strcmp(argv[i], "--tsym") == 0) {
+        else if (strcmp(argv[i], "-s") == 0 || strcmp(argv[i], "--symtabs") == 0) {
             printsymb = 1;
         }
         else if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {
-            printf("Utiliser l'analyseur syntaxique : \n\t ./tpcas [options] < fichier.tpc\n\n\tLes options sont : \n\t\t-h / --help : afficher cette aide\n\t\t-t / --tree : afficher l'arbre abstrait\n\t\t-s / --tsym : afficher les tables des symboles\n\n");
+            printf("Utiliser l'analyseur syntaxique : \n\t ./tpcas [options] < fichier.tpc\n\n\tLes options sont : \n\t\t-h / --help : afficher cette aide\n\t\t-t / --tree : afficher l'arbre abstrait\n\t\t-s / --symtabs : afficher les tables des symboles\n\n");
             return 0;
         }
     }
     if (yyparse() == 0) {
         /*si ya pas de problèmes !!!!*/
         
-        nasm_output = fopen("./anonymous.asm", "w+");
+        nasm_output = fopen("./_anonymous.asm", "w+");
         if (print_tree_bool && root != NULL) {
             printTree(root);
             
         }
         sem(root);
         fclose(nasm_output);
-        return 0;
+        return (nberror_sem > 0) ? 2 : 0; // si on a eu au moins une erreur semantique on met 2 sinon 0
     }
     return 1 + nberror;
 }

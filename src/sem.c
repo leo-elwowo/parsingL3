@@ -47,13 +47,99 @@ static const char *StringFromLabel_suppr_juste_pour_print[] = {
   "VOID"
 };
 
-
+int nberror_sem = 0; //cette variable sera extern dans le .y, elle me permet d'avoir un bon code de retour
 
 static int newlabel(){
     static int i = 0;
     return ++i;
 }
 
+static void write_builtin_io(FILE *file) {
+    /*
+    a chaque début de programme on écrit la stdio maison
+    */
+    fprintf(file,
+        "; --- fonctions d'E/S built-in ---\n"
+        "putchar:\n"
+        "\tpush rbp\n\tmov rbp, rsp\n"
+        "\tpush rdi\n"
+        "\tmov rax, 1\n\tmov rdi, 1\n\tmov rsi, rsp\n\tmov rdx, 1\n\tsyscall\n"
+        "\tpop rdi\n"
+        "\tmov rsp, rbp\n\tpop rbp\n\tret\n\n"
+
+        "getchar:\n"
+        "\tpush rbp\n\tmov rbp, rsp\n"
+        "\tsub rsp, 8\n"
+        "\tmov rax, 0\n\tmov rdi, 0\n\tmov rsi, rsp\n\tmov rdx, 1\n\tsyscall\n"
+        "\tmovzx rax, byte [rsp]\n"
+        "\tmov rsp, rbp\n\tpop rbp\n\tret\n\n"
+
+        "putint:\n"
+        "\tpush rbp\n\tmov rbp, rsp\n"
+        "\tsub rsp, 32\n"
+        "\tmov rax, rdi\n"
+        "\tlea rsi, [rsp+30]\n"
+        "\tmov byte [rsp+31], 10\n"  /* newline */
+        "\txor rcx, rcx\n"
+        "\ttest rax, rax\n"
+        "\tjns .putint_pos\n"
+        "\tneg rax\n"
+        ".putint_pos:\n"
+        "\tmov rbx, 10\n"
+        ".putint_loop:\n"
+        "\txor rdx, rdx\n\tcqo\n\tidiv rbx\n"
+        "\tadd dl, '0'\n"
+        "\tmov [rsi], dl\n\tdec rsi\n\tinc rcx\n"
+        "\ttest rax, rax\n\tjnz .putint_loop\n"
+        "\ttest rdi, rdi\n\tjns .putint_write\n"
+        "\tmov byte [rsi], '-'\n\tdec rsi\n\tinc rcx\n"
+        ".putint_write:\n"
+        "\tinc rsi\n"
+        "\tadd rcx, 1\n"  /* inclut le \n */
+        "\tmov rax, 1\n\tmov rdi, 1\n\tmov rdx, rcx\n\tsyscall\n"
+        "\tmov rsp, rbp\n\tpop rbp\n\tret\n\n"
+
+        "getint:\n"
+        "\tpush rbp\n\tmov rbp, rsp\n"
+        "\tsub rsp, 8\n"
+        "\txor r12, r12\n"    /* accumulateur */
+        "\txor r13, r13\n"    /* signe: 0=positif, 1=négatif */
+        "\txor r14, r14\n"    /* nb chiffres lus */
+        /* lire premier char */
+        "\tmov rax, 0\n\tmov rdi, 0\n\tmov rsi, rsp\n\tmov rdx, 1\n\tsyscall\n"
+        "\tmovzx rbx, byte [rsp]\n"
+        "\tcmp rbx, '-'\n\tje .getint_minus\n"
+        "\tcmp rbx, '+'\n\tje .getint_plus\n"
+        "\tjmp .getint_check_digit\n"
+        ".getint_minus:\n\tmov r13, 1\n\tjmp .getint_next\n"
+        ".getint_plus:\n\tjmp .getint_next\n"
+        ".getint_check_digit:\n"
+        "\tcmp rbx, '0'\n\tjl .getint_error\n"
+        "\tcmp rbx, '9'\n\tjg .getint_error\n"
+        "\tsub rbx, '0'\n"
+        "\timul r12, r12, 10\n\tadd r12, rbx\n"
+        "\tinc r14\n"
+        ".getint_next:\n"
+        "\tmov rax, 0\n\tmov rdi, 0\n\tmov rsi, rsp\n\tmov rdx, 1\n\tsyscall\n"
+        "\tmovzx rbx, byte [rsp]\n"
+        "\tcmp rbx, 10\n\tje .getint_done\n"  /* newline = fin */
+        "\tcmp rbx, '0'\n\tjl .getint_error\n"
+        "\tcmp rbx, '9'\n\tjg .getint_error\n"
+        "\tsub rbx, '0'\n"
+        "\timul r12, r12, 10\n\tadd r12, rbx\n"
+        "\tinc r14\n"
+        "\tjmp .getint_next\n"
+        ".getint_done:\n"
+        "\ttest r14, r14\n\tjz .getint_error\n"  /* aucun chiffre */
+        "\tmov rax, r12\n"
+        "\ttest r13, r13\n\tjz .getint_ret\n"
+        "\tneg rax\n"
+        ".getint_ret:\n"
+        "\tmov rsp, rbp\n\tpop rbp\n\tret\n"
+        ".getint_error:\n"
+        "\tmov rax, 60\n\tmov rdi, 5\n\tsyscall\n\n"
+    );
+}
 static void write_asm_bool(FILE *file, Node *node, int label_true, int label_false);
 //parce que sinon write_asm_expr ne la trouvera pas
 
@@ -76,19 +162,18 @@ static void write_asm_expr(FILE * file, Node * node){
             int label_false = newlabel();
             int label_fin = newlabel();
 
-            // 1. On confie l'évaluation paresseuse à notre fonction dédiée
+
             write_asm_bool(file, node, label_true, label_false);
 
-            // 2. Si l'expression atterrit ici, c'est VRAI : on empile 1
+
             fprintf(file, ".L%d:\n", label_true);
             fprintf(file, "\tpush 1\n");
-            fprintf(file, "\tjmp .L%d\n", label_fin); // On saute à la fin
+            fprintf(file, "\tjmp .L%d\n", label_fin);
 
-            // 3. Si l'expression atterrit ici, c'est FAUX : on empile 0
+
             fprintf(file, ".L%d:\n", label_false);
             fprintf(file, "\tpush 0\n");
 
-            // 4. Point de chute final pour que le calcul reprenne
             fprintf(file, ".L%d:\n", label_fin);
             break;
         }
@@ -101,7 +186,16 @@ static void write_asm_expr(FILE * file, Node * node){
         fprintf(file, "\tpush %d\n", node->character);
         break;
         case T_ADDSUB:
-        
+        if (node->firstChild->nextSibling == NULL) {
+            // unaire : -x ou +x
+            write_asm_expr(file, node->firstChild);
+            if (node->byte == '-') {
+                fprintf(file, "\tpop rax\n");
+                fprintf(file, "\tneg rax\n");   //met en negatif omg
+                fprintf(file, "\tpush rax\n");
+            }
+            break;
+        }
         //si c'est une soustraction on fait ca
         //fprintf(file, "\t;on traite la soustraction\n");
         write_asm_expr(file, node->firstChild);    //on va push la partie gauche
@@ -365,7 +459,7 @@ void sem(Node *node) {
     if (!node) return;
     
     //décommenter cette ligne pour afficher le parcours de l'arbre
-    printf("current node : %s\n", StringFromLabel_suppr_juste_pour_print[node->label]);
+    //printf("current node : %s\n", StringFromLabel_suppr_juste_pour_print[node->label]);
     
     
 
@@ -377,6 +471,7 @@ void sem(Node *node) {
             fprintf(nasm_output, "\tmov rdi, rax\n");
             fprintf(nasm_output, "\tmov rax, 60\n");
             fprintf(nasm_output, "\tsyscall\n\n");
+            write_builtin_io(nasm_output);
             break;
 
         case T_FUNC:
@@ -400,8 +495,9 @@ void sem(Node *node) {
             fprintf(nasm_output, "\tmov rbp, rsp\n");
             sem(node->firstChild);
             sem(node->firstChild->nextSibling);
-            if (current_offset < 0) {
-                fprintf(nasm_output, "\tsub rsp, %d\n", -current_offset);
+            int alloc = -current_offset - 8;  // -8 car current_offset part de -8
+            if (alloc > 0) {
+                fprintf(nasm_output, "\tsub rsp, %d\n", alloc);
             }
             Node *param_list = node->firstChild->firstChild->nextSibling->nextSibling; 
             if (param_list != NULL && param_list->label == T_LIST) {
@@ -470,6 +566,7 @@ void sem(Node *node) {
                 found = search_value(node->ident, global_table);
             }
             if (found == NULL) {
+                nberror_sem++;
                 fprintf(stderr, "Erreur sémantique : variable '%s' non déclarée (ligne %d)\n", node->ident, node->lineno);
             }
             break;

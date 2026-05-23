@@ -70,7 +70,7 @@ void          {return VOID;}
 
 {BLANCS} ;
 \n {lineno++;}
-. {exit(1);}
+. {fprintf(stderr, "Erreur lexicale ligne %d : caractère inattendu '%s'\n", lineno, yytext); exit(1);}
 <*><<EOF>> {printf("\n"); return 0;}
 
 %%
