@@ -39,7 +39,7 @@ obj/lex.yy.o: obj/lex.yy.c
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 clean:
-	rm -rf obj bin compiled anonymous.*
+	rm -rf obj bin compiled _anonymous.*
 
 test_asm: bin/tpcc
 	./bin/tpcc < iftest.tpc
