@@ -17,6 +17,13 @@ extern FILE * nasm_output;
 
 int nberror_sem = 0; //cette variable sera extern dans le .y, elle me permet d'avoir un bon code de retour
 
+static int is_node_struct(Node *n) {
+    if (!n) return 0;
+    // Si c'est un identifiant et qu'il est enregistré comme struct
+    if (n->label == T_IDENT && get_var_struct_type(n->ident) != NULL) return 1;
+    return 0;
+}
+
 static int newlabel(){
     static int i = 0;
     return ++i;
@@ -761,9 +768,15 @@ void sem(Node *node) {
                 }
                 if (node->firstChild->nextSibling != NULL) {
                     Node *args = node->firstChild->nextSibling;
-                    if (args->label == T_LIST)
-                        for (Node *arg = args->firstChild; arg != NULL; arg = arg->nextSibling)
+                    if (args->label == T_LIST) {
+                        for (Node *arg = args->firstChild; arg != NULL; arg = arg->nextSibling) {
                             check_expr_for_void_fcall(arg);
+                            if (is_node_struct(arg)) {
+                                nberror_sem++;
+                                fprintf(stderr, "Erreur sémantique : struct passée en paramètre (ligne %d)\n", arg->lineno);
+                            }
+                        }
+                    }
                     sem(args);
                 }
             }
@@ -828,17 +841,37 @@ void sem(Node *node) {
         }
         case T_RETURN:
             if (node->firstChild) check_expr_for_void_fcall(node->firstChild);
+            
             if (node->firstChild && current_func_is_void) {
                 nberror_sem++;
                 fprintf(stderr, "Erreur sémantique : return avec valeur dans fonction void (ligne %d)\n", node->lineno);
+            } else if (is_node_struct(node->firstChild)) { // <--- VÉRIFICATION ICI
+                nberror_sem++;
+                fprintf(stderr, "Erreur sémantique : impossible de retourner une struct (ligne %d)\n", node->lineno);
             }
             break;
 
         case T_IF:
         case T_WHILE:
-            if (node->firstChild) check_expr_for_void_fcall(node->firstChild);
+            if (node->firstChild) {
+                check_expr_for_void_fcall(node->firstChild);
+                if (is_node_struct(node->firstChild)) { // <--- VÉRIFICATION ICI
+                    nberror_sem++;
+                    fprintf(stderr, "Erreur sémantique : condition ne peut pas être une struct (ligne %d)\n", node->lineno);
+                }
+            }
             break;
-
+        case T_ADDSUB:
+        case T_DIVSTAR:
+        case T_EQ:
+        case T_ORDER:
+        case T_AND:
+        case T_OR:
+            if (is_node_struct(node->firstChild) || is_node_struct(node->firstChild->nextSibling)) {
+                nberror_sem++;
+                fprintf(stderr, "Erreur sémantique : opération arithmétique/logique interdite sur une struct (ligne %d)\n", node->lineno);
+            }
+            break;
         case T_ASSIGN:
 
             //fprintf(stderr, "assigning %s to %s (%s <-- %s)\n", node->firstChild->ident, node->firstChild->nextSibling->ident, node->firstChild->ident, node->firstChild->nextSibling->ident);    
@@ -870,7 +903,8 @@ void sem(Node *node) {
                 if (rhs && rhs->label == T_IDENT)
                     rhs_stype = get_var_struct_type(rhs->ident);
                 /* Vérifier la compatibilité */
-                if (lhs_stype != NULL && rhs_stype == NULL && rhs && rhs->label != T_MEMBER_ACCESS) {
+                if (lhs_stype != NULL && rhs_stype == NULL && rhs &&
+                    rhs->label != T_MEMBER_ACCESS && rhs->label != T_FCALL) {
                     nberror_sem++;
                     fprintf(stderr, "Erreur sémantique : affectation d'une expression non-struct à 'struct %s' (ligne %d)\n",
                             lhs_stype, node->lineno);
@@ -878,6 +912,9 @@ void sem(Node *node) {
                     nberror_sem++;
                     fprintf(stderr, "Erreur sémantique : affectation de 'struct %s' à 'struct %s' incompatible (ligne %d)\n",
                             rhs_stype, lhs_stype, node->lineno);
+                } else if (lhs_stype == NULL && rhs_stype != NULL) {
+                    nberror_sem++;
+                    fprintf(stderr, "Erreur sémantique : affectation d'une 'struct' à un type de base interdite (ligne %d)\n", node->lineno);
                 }
             }
 
