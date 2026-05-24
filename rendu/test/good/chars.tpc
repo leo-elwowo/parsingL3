@@ -1,0 +1,7 @@
+int main(void) {
+    char c1, c2, c3;
+    c1 = 'a';
+    c2 = '\n'; /* Saut de ligne */
+    c3 = '\t'; /* Tabulation */
+    return 0;
+}

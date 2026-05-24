@@ -1,0 +1,9 @@
+void printer(int x) {
+    return;
+}
+
+int main(void) {
+    int r;
+    r = printer(5);
+    return r;
+}

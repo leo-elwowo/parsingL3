@@ -17,11 +17,23 @@ extern FILE * nasm_output;
 
 int nberror_sem = 0; //cette variable sera extern dans le .y, elle me permet d'avoir un bon code de retour
 
+/* Returns the struct type name if n evaluates to a struct, NULL otherwise */
+static const char *get_node_struct_type(Node *n) {
+    if (!n) return NULL;
+    if (n->label == T_IDENT) return get_var_struct_type(n->ident);
+    if (n->label == T_MEMBER_ACCESS) {
+        Node *b = n->firstChild;
+        Node *f = b ? b->nextSibling : NULL;
+        if (!b || !f) return NULL;
+        const char *btype = get_node_struct_type(b);
+        if (!btype) return NULL;
+        return get_field_struct_type(btype, f->ident);
+    }
+    return NULL;
+}
+
 static int is_node_struct(Node *n) {
-    if (!n) return 0;
-    // Si c'est un identifiant et qu'il est enregistré comme struct
-    if (n->label == T_IDENT && get_var_struct_type(n->ident) != NULL) return 1;
-    return 0;
+    return get_node_struct_type(n) != NULL;
 }
 
 static int newlabel(){
@@ -124,6 +136,8 @@ static void write_asm_bool(FILE *file, Node *node, int label_true, int label_fal
 //parce que sinon write_asm_expr ne la trouvera pas
 
 static int current_func_is_void = 0;
+static int current_func_returns_struct = 0;
+static VarType *var_types_at_func_start = NULL;
 
 static void check_expr_for_void_fcall(Node *node) {
     if (!node) return;
@@ -545,6 +559,8 @@ void sem(Node *node) {
                             fprintf(stderr, "Erreur sémantique : fonction '%s' déjà déclarée\n", name_node->ident);
                         } else {
                             Node *ret_type = fn->firstChild->firstChild;
+                            int returns_int = (ret_type != NULL && ret_type->label == T_TYPE
+                                               && strcmp(ret_type->ident, "int") == 0);
                             int is_void = (ret_type != NULL && ret_type->label == T_TYPE
                                            && strcmp(ret_type->ident, "void") == 0);
                             int param_count = 0;
@@ -553,7 +569,7 @@ void sem(Node *node) {
                                 for (Node *p = plist->firstChild; p; p = p->nextSibling)
                                     if (p->label == T_PARAM) param_count++;
                             if (strcmp(name_node->ident, "main") == 0) {
-                                if (is_void) {
+                                if (!returns_int) {
                                     nberror_sem++;
                                     fprintf(stderr, "Erreur sémantique : 'main' doit retourner int\n");
                                 }
@@ -598,6 +614,9 @@ void sem(Node *node) {
             {
                 Symbol *fsi = search_value(func_name, function_table);
                 current_func_is_void = (fsi != NULL && fsi->deplct % 2 == 1);
+                Node *ret_type = node->firstChild->firstChild;
+                current_func_returns_struct = (ret_type != NULL && ret_type->label == T_TYPE_STRUCT);
+                var_types_at_func_start = var_types;
             }
 
             fprintf(nasm_output, "%s:\n", func_name);
@@ -732,19 +751,36 @@ void sem(Node *node) {
             Node *field = base ? base->nextSibling : NULL;
             if (base) sem(base);
             if (base && field) {
-                const char *stype = NULL;
-                if (base->label == T_IDENT)
-                    stype = get_var_struct_type(base->ident);
-                if (stype) {
-                    if (find_field_index(stype, field->ident) < 0) {
-                        nberror_sem++;
-                        fprintf(stderr, "Erreur sémantique : '%s' n'est pas un champ de 'struct %s' (ligne %d)\n",
-                                field->ident, stype, node->lineno);
+                if (base->label == T_IDENT) {
+                    const char *stype = get_var_struct_type(base->ident);
+                    if (stype) {
+                        if (find_field_index(stype, field->ident) < 0) {
+                            nberror_sem++;
+                            fprintf(stderr, "Erreur sémantique : '%s' n'est pas un champ de 'struct %s' (ligne %d)\n",
+                                    field->ident, stype, node->lineno);
+                        }
+                    } else {
+                        Symbol *s = search_value(base->ident, local_table);
+                        if (!s) s = search_value(base->ident, global_table);
+                        if (s) {
+                            nberror_sem++;
+                            fprintf(stderr, "Erreur sémantique : '%s' n'est pas de type struct (ligne %d)\n",
+                                    base->ident, node->lineno);
+                        }
                     }
-                } else {
-                    nberror_sem++;
-                    fprintf(stderr, "Erreur sémantique : la base de l'accès membre n'est pas de type struct (ligne %d)\n",
-                            node->lineno);
+                } else if (base->label == T_MEMBER_ACCESS) {
+                    const char *btype = get_node_struct_type(base);
+                    if (btype) {
+                        if (find_field_index(btype, field->ident) < 0) {
+                            nberror_sem++;
+                            fprintf(stderr, "Erreur sémantique : '%s' n'est pas un champ de 'struct %s' (ligne %d)\n",
+                                    field->ident, btype, node->lineno);
+                        }
+                    } else {
+                        nberror_sem++;
+                        fprintf(stderr, "Erreur sémantique : accès de champ sur une expression non-struct (ligne %d)\n",
+                                node->lineno);
+                    }
                 }
             }
             break;
@@ -775,10 +811,6 @@ void sem(Node *node) {
                     if (args->label == T_LIST) {
                         for (Node *arg = args->firstChild; arg != NULL; arg = arg->nextSibling) {
                             check_expr_for_void_fcall(arg);
-                            if (is_node_struct(arg)) {
-                                nberror_sem++;
-                                fprintf(stderr, "Erreur sémantique : struct passée en paramètre (ligne %d)\n", arg->lineno);
-                            }
                         }
                     }
                     sem(args);
@@ -845,16 +877,19 @@ void sem(Node *node) {
         }
         case T_RETURN:
             if (node->firstChild) check_expr_for_void_fcall(node->firstChild);
-
             if (node->firstChild && current_func_is_void) {
                 nberror_sem++;
                 fprintf(stderr, "Erreur sémantique : return avec valeur dans fonction void (ligne %d)\n", node->lineno);
-            } else if (!node->firstChild && !current_func_is_void) {
-                nberror_sem++;
-                fprintf(stderr, "Erreur sémantique : return sans valeur dans fonction non-void (ligne %d)\n", node->lineno);
-            } else if (is_node_struct(node->firstChild)) {
-                nberror_sem++;
-                fprintf(stderr, "Erreur sémantique : impossible de retourner une struct (ligne %d)\n", node->lineno);
+            } else if (node->firstChild) {
+                Node *ret = node->firstChild;
+                const char *ret_stype = get_node_struct_type(ret);
+                if (ret_stype != NULL && !current_func_returns_struct) {
+                    nberror_sem++;
+                    fprintf(stderr, "Erreur sémantique : impossible de retourner une struct (ligne %d)\n", node->lineno);
+                } else if (ret_stype == NULL && current_func_returns_struct && ret->label != T_FCALL) {
+                    nberror_sem++;
+                    fprintf(stderr, "Erreur sémantique : retour d'une valeur non-struct dans une fonction retournant une struct (ligne %d)\n", node->lineno);
+                }
             }
             break;
 
@@ -911,11 +946,11 @@ void sem(Node *node) {
                         lhs_stype = NULL; /* champ d'un struct = int/char, pas struct (cas simple) */
                 }
                 /* Déterminer le type struct du RHS */
-                if (rhs && rhs->label == T_IDENT)
-                    rhs_stype = get_var_struct_type(rhs->ident);
+                if (rhs)
+                    rhs_stype = get_node_struct_type(rhs);
                 /* Vérifier la compatibilité */
                 if (lhs_stype != NULL && rhs_stype == NULL && rhs &&
-                    rhs->label != T_MEMBER_ACCESS && rhs->label != T_FCALL) {
+                    rhs->label != T_FCALL) {
                     nberror_sem++;
                     fprintf(stderr, "Erreur sémantique : affectation d'une expression non-struct à 'struct %s' (ligne %d)\n",
                             lhs_stype, node->lineno);
@@ -923,7 +958,7 @@ void sem(Node *node) {
                     nberror_sem++;
                     fprintf(stderr, "Erreur sémantique : affectation de 'struct %s' à 'struct %s' incompatible (ligne %d)\n",
                             rhs_stype, lhs_stype, node->lineno);
-                } else if (lhs_stype == NULL && rhs_stype != NULL) {
+                } else if (lhs_stype == NULL && rhs_stype != NULL && lhs->label == T_IDENT) {
                     nberror_sem++;
                     fprintf(stderr, "Erreur sémantique : affectation d'une 'struct' à un type de base interdite (ligne %d)\n", node->lineno);
                 }
@@ -961,7 +996,12 @@ void sem(Node *node) {
     
 
     if (node->label == T_FUNC) {
-        free_table(local_table); 
+        while (var_types != var_types_at_func_start) {
+            VarType *tmp = var_types;
+            var_types = var_types->next;
+            free(tmp);
+        }
+        free_table(local_table);
         local_table = NULL;
     }
 

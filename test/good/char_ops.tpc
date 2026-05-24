@@ -1,0 +1,17 @@
+int char_to_int(char c) {
+    int n;
+    n = c;
+    return n;
+}
+
+int main(void) {
+    char c;
+    int r;
+    c = 'A';
+    r = char_to_int(c);
+    r = r + 1;
+    if (r > 64) {
+        return r - 64;
+    }
+    return 0;
+}

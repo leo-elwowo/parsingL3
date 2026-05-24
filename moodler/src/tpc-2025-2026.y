@@ -409,7 +409,7 @@ int main(int argc, char **argv) {
     int print_tree_bool = 0;
     /*
     if (argc == 1){
-        printf("Utiliser l'analyseur syntaxique : \n\t ./tpcas [options] < fichier.tpc\n\n\tLes options sont : \n\t\t-h / --help : afficher cette aide\n\t\t-t / --tree : afficher l'arbre abstrait généré par Bison\n\n");
+        printf("Utiliser l'analyseur syntaxique : \n\t ./bin/tpcc [options] < fichier.tpc\n\n\tLes options sont : \n\t\t-h / --help : afficher cette aide\n\t\t-t / --tree : afficher l'arbre abstrait généré par Bison\n\n");
         printf("\n/DEBUG/\nargc = %d\n", argc);
         return 0;
     }
@@ -422,7 +422,7 @@ int main(int argc, char **argv) {
             printsymb = 1;
         }
         else if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {
-            printf("Utiliser l'analyseur syntaxique : \n\t ./tpcas [options] < fichier.tpc\n\n\tLes options sont : \n\t\t-h / --help : afficher cette aide\n\t\t-t / --tree : afficher l'arbre abstrait\n\t\t-s / --symtabs : afficher les tables des symboles\n\n");
+            printf("Utiliser l'analyseur syntaxique : \n\t ./bin/tpcc [options] < fichier.tpc\n\n\tLes options sont : \n\t\t-h / --help : afficher cette aide\n\t\t-t / --tree : afficher l'arbre abstrait\n\t\t-s / --symtabs : afficher les tables des symboles\n\n");
             return 0;
         }
     }

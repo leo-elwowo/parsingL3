@@ -1,0 +1,47 @@
+/* test_spaghetti.tpc */
+
+int algo_bizarre(int n) {
+    int i, result;
+    i = 0;
+    result = 0;
+
+    while (i < n) {
+        if (i % 2 == 0) {
+            if (i % 3 == 0) {
+                result = result + 2;
+            } else {
+                result = result + 1;
+            }
+        } 
+        /* Pas de else ici pour le premier if */
+        
+        if (result > 50) {
+            return result;
+        }
+        
+        while (result < 0) {
+            result = result + 1;
+            if (result == 0) {
+                return 0;
+            }
+        }
+        
+        i = i + 1;
+    }
+    return result;
+}
+
+int main(void) {
+    int val;
+    val = algo_bizarre(20);
+    
+    if (val > 10) 
+        if (val > 20) 
+            return 2;
+        else 
+            return 1;
+    /* Le else ci-dessus doit s'attacher au if (val > 20) */
+            
+    return 0;
+}
+/*IAAAAAAAAAAAAAAAA*/

@@ -1,0 +1,4 @@
+int main(void) {
+    missing_func();
+    return 0;
+}

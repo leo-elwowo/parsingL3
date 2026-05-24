@@ -1,0 +1,15 @@
+void print_val(int x) {
+    putint(x);
+    return;
+}
+
+int double_it(int n) {
+    return n * 2;
+}
+
+int main(void) {
+    int r;
+    r = double_it(5);
+    print_val(r);
+    return 0;
+}

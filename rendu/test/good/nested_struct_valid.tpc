@@ -1,0 +1,16 @@
+struct A {
+    int val;
+};
+
+struct B {
+    struct A a;
+    int n;
+};
+
+int main(void) {
+    struct B b;
+    int r;
+    r = b.a.val;
+    b.n = r + 1;
+    return b.n;
+}

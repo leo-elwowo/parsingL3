@@ -1,0 +1,12 @@
+struct Point {
+    int x;
+    int y;
+};
+
+struct Point foo(void) {
+    return 0;
+}
+
+int main(void) {
+    return 0;
+}

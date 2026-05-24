@@ -1,0 +1,7 @@
+int main(void) {
+    char c;
+    int n;
+    n = 65;
+    c = n;
+    return 0;
+}

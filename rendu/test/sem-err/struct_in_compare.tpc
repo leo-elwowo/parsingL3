@@ -1,0 +1,12 @@
+struct Point {
+    int x;
+    int y;
+};
+
+int main(void) {
+    struct Point p;
+    struct Point q;
+    int r;
+    r = (p == q);
+    return r;
+}

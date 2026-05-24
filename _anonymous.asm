@@ -152,17 +152,17 @@ getint:
 main:
 	push rbp
 	mov rbp, rsp
-	sub rsp, 8
-	mov rax, [p + 0]
-	push rax
-	pop r10
+	sub rsp, 16
+	;mise sur la pile du nombre '200'
+	push 200
 	pop rax
-	add rax, r10
+	mov [rbp-16], rax
+	mov rax, [rbp-16]
 	push rax
 	pop rax
 	mov [rbp-8], rax
-	mov rax, [rbp-8]
-	push rax
+	;mise sur la pile du nombre '0'
+	push 0
 	pop rax
 	mov rsp, rbp
 	pop rbp
@@ -170,7 +170,4 @@ main:
 	mov rsp, rbp
 	pop rbp
 	ret
-
-section .bss
-	p: resq 1
 

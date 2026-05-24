@@ -1,0 +1,8 @@
+int glob;
+
+int main(void){
+    int x;
+    x = 2;
+    glob = x * 5;
+    return glob;
+}

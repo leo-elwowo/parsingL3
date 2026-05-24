@@ -1,0 +1,5 @@
+int main(void) {
+    int price;
+    price = 100$; /* Le $ n'existe pas en TPC */
+    return 0;
+}

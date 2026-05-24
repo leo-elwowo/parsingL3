@@ -1,0 +1,19 @@
+int counter;
+
+void increment(void) {
+    counter = counter + 1;
+    return;
+}
+
+void reset(void) {
+    counter = 0;
+    return;
+}
+
+int main(void) {
+    reset();
+    increment();
+    increment();
+    increment();
+    return counter;
+}

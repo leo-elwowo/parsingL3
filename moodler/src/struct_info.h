@@ -6,6 +6,7 @@
 typedef struct FieldDef {
     char name[64];
     int index;
+    char struct_type[64]; /* "" if int/char, "TypeName" if struct field */
     struct FieldDef *next;
 } FieldDef;
 
@@ -36,6 +37,8 @@ int get_struct_num_fields(const char *struct_name);
 void register_var_struct_type(const char *var_name, const char *struct_name);
 
 const char *get_var_struct_type(const char *var_name);
+
+const char *get_field_struct_type(const char *struct_name, const char *field_name);
 
 void free_struct_info(void);
 

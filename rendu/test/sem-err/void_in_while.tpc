@@ -1,0 +1,10 @@
+void tick(void) {
+    return;
+}
+
+int main(void) {
+    while (tick()) {
+        return 1;
+    }
+    return 0;
+}

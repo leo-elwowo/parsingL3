@@ -1,0 +1,9 @@
+void tick(void) {
+    return;
+}
+
+int main(void) {
+    int r;
+    r = tick() + 1;
+    return r;
+}

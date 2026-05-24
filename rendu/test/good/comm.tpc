@@ -1,0 +1,6 @@
+// Commentaire ligne
+int main(void) {
+    /* Commentaire 
+       bloc sur plusieurs lignes */
+    return 0; /* fin */
+}

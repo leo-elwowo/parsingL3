@@ -21,13 +21,18 @@ void register_struct_def(const char *struct_name, Node *field_list_node) {
             if (dv->label != T_DECL_VARS) continue;
             Node *inner = dv->firstChild;
             if (!inner) continue;
-            Node *decl_list = inner->firstChild ? inner->firstChild->nextSibling : NULL;
+            Node *type_node = inner->firstChild;
+            Node *decl_list = type_node ? type_node->nextSibling : NULL;
             if (!decl_list) continue;
+            char field_stype[64] = "";
+            if (type_node && type_node->label == T_TYPE_STRUCT && type_node->firstChild)
+                strncpy(field_stype, type_node->firstChild->ident, 63);
             for (Node *id = decl_list->firstChild; id != NULL; id = id->nextSibling) {
                 if (id->label != T_IDENT) continue;
                 FieldDef *fd = malloc(sizeof(FieldDef));
                 strncpy(fd->name, id->ident, 63); fd->name[63] = '\0';
                 fd->index = idx++;
+                strncpy(fd->struct_type, field_stype, 63); fd->struct_type[63] = '\0';
                 fd->next = sd->fields;
                 sd->fields = fd;
                 sd->num_fields++;
@@ -73,6 +78,15 @@ void register_var_struct_type(const char *var_name, const char *struct_name) {
 const char *get_var_struct_type(const char *var_name) {
     for (VarType *vt = var_types; vt; vt = vt->next)
         if (strcmp(vt->var_name, var_name) == 0) return vt->struct_name;
+    return NULL;
+}
+
+const char *get_field_struct_type(const char *struct_name, const char *field_name) {
+    StructDef *sd = find_struct_def(struct_name);
+    if (!sd) return NULL;
+    for (FieldDef *f = sd->fields; f; f = f->next)
+        if (strcmp(f->name, field_name) == 0)
+            return f->struct_type[0] ? f->struct_type : NULL;
     return NULL;
 }
 

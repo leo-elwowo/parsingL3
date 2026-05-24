@@ -1,0 +1,41 @@
+/* test_math_logic.tpc */
+
+int main(void) {
+    int a, b, c, d, res;
+    char code;
+    
+    a = 10;
+    b = 20;
+    c = 5;
+    d = 0;
+    
+    /* Test priorité arithmétique : c * a doit se faire avant + */
+    res = a + c * a - b / c; 
+    
+    /* Test parenthèses et moins unaire */
+    res = (a + b) * (c - -d); 
+    
+    /* Test modulo et division */
+    if (a % 2 == 0) {
+        d = 1;
+    }
+    
+    /* Expression booléenne complexe (Le cauchemar des parsers) */
+    /* Doit gérer : OR, AND, EQ, NEQ, NOT, ORDER */
+    if ( (a > b || c <= d) && !(a == 0) ) {
+        return 1;
+    }
+    
+    if ( a != b && (c == 5 || d == 1) && 1 ) {
+        res = 100;
+    }
+    
+    /* Affectation en chaîne (si ta grammaire le permet, sinon simplifier) */
+    /* En C standard : a = b = c = 0; */
+    /* En TPC strict souvent : a = 0; b = 0; c = 0; */
+    a = 0; 
+    b = 0;
+    
+    return res;
+}
+/*IA !!!!!!!!!!!*/

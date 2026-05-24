@@ -1,0 +1,14 @@
+struct A {
+    int val;
+};
+
+struct B {
+    struct A a;
+};
+
+int main(void) {
+    struct B b;
+    int n;
+    n = b.a;
+    return n;
+}
