@@ -17,6 +17,8 @@ extern FILE * nasm_output;
 
 int nberror_sem = 0; //cette variable sera extern dans le .y, elle me permet d'avoir un bon code de retour
 
+static const char *get_func_ret_struct(const char *fn);
+
 /* Returns the struct type name if n evaluates to a struct, NULL otherwise */
 static const char *get_node_struct_type(Node *n) {
     if (!n) return NULL;
@@ -29,11 +31,38 @@ static const char *get_node_struct_type(Node *n) {
         if (!btype) return NULL;
         return get_field_struct_type(btype, f->ident);
     }
+    if (n->label == T_FCALL && n->firstChild)
+        return get_func_ret_struct(n->firstChild->ident);
     return NULL;
 }
 
 static int is_node_struct(Node *n) {
     return get_node_struct_type(n) != NULL;
+}
+
+/* Resolves a member-access chain to a base symbol and flat slot offset.
+   Returns the flat slot offset, or -1 on error.
+   *base_sym is set to the root variable's Symbol.
+   *is_global is set to 1 if it's a global variable. */
+static int get_member_flat_slot(Node *node, Symbol **base_sym, int *is_global) {
+    if (node->label == T_IDENT) {
+        Symbol *s = search_value(node->ident, local_table);
+        if (s) { *base_sym = s; *is_global = 0; return 0; }
+        s = search_value(node->ident, global_table);
+        if (s) { *base_sym = s; *is_global = 1; return 0; }
+        return -1;
+    }
+    if (node->label != T_MEMBER_ACCESS) return -1;
+    Node *base = node->firstChild;
+    Node *field = base ? base->nextSibling : NULL;
+    if (!base || !field) return -1;
+    int base_slot = get_member_flat_slot(base, base_sym, is_global);
+    if (base_slot < 0) return -1;
+    const char *base_stype = get_node_struct_type(base);
+    if (!base_stype) return -1;
+    int fidx = find_field_index(base_stype, field->ident);
+    if (fidx < 0) return -1;
+    return base_slot + fidx;
 }
 
 static int newlabel(){
@@ -137,7 +166,22 @@ static void write_asm_bool(FILE *file, Node *node, int label_true, int label_fal
 
 static int current_func_is_void = 0;
 static int current_func_returns_struct = 0;
+static char current_func_return_struct_type[64] = "";
 static VarType *var_types_at_func_start = NULL;
+
+typedef struct FuncRetType { char fname[64]; char stype[64]; struct FuncRetType *next; } FuncRetType;
+static FuncRetType *func_ret_types = NULL;
+static void register_func_ret_struct(const char *fn, const char *st) {
+    FuncRetType *e = malloc(sizeof(FuncRetType));
+    strncpy(e->fname, fn, 63); e->fname[63] = '\0';
+    strncpy(e->stype, st, 63); e->stype[63] = '\0';
+    e->next = func_ret_types; func_ret_types = e;
+}
+static const char *get_func_ret_struct(const char *fn) {
+    for (FuncRetType *e = func_ret_types; e; e = e->next)
+        if (strcmp(e->fname, fn) == 0) return e->stype;
+    return NULL;
+}
 
 static void check_expr_for_void_fcall(Node *node) {
     if (!node) return;
@@ -257,43 +301,55 @@ static void write_asm_expr(FILE * file, Node * node){
         case T_IDENT: {
             Symbol *s_read = search_value(node->ident, local_table);
             if (s_read != NULL) {
-                fprintf(file, "\tmov rax, [rbp%+d]\n", s_read->deplct);
-                fprintf(file, "\tpush rax\n");
+                const char *stype_id = get_var_struct_type(node->ident);
+                if (stype_id) {
+                    int nf = get_struct_num_fields(stype_id);
+                    for (int fi = 0; fi < nf; fi++) {
+                        fprintf(file, "\tmov rax, [rbp%+d]\n", s_read->deplct - fi * 8);
+                        fprintf(file, "\tpush rax\n");
+                    }
+                } else {
+                    fprintf(file, "\tmov rax, [rbp%+d]\n", s_read->deplct);
+                    fprintf(file, "\tpush rax\n");
+                }
                 break;
             }
             s_read = search_value(node->ident, global_table);
             if (s_read != NULL) {
-                fprintf(file, "\tmov rax, [%s]\n", s_read->ident);
-                fprintf(file, "\tpush rax\n");
+                const char *stype_id = get_var_struct_type(node->ident);
+                if (stype_id) {
+                    int nf = get_struct_num_fields(stype_id);
+                    for (int fi = 0; fi < nf; fi++) {
+                        if (fi == 0)
+                            fprintf(file, "\tmov rax, [%s]\n", s_read->ident);
+                        else
+                            fprintf(file, "\tmov rax, [%s + %d]\n", s_read->ident, fi * 8);
+                        fprintf(file, "\tpush rax\n");
+                    }
+                } else {
+                    fprintf(file, "\tmov rax, [%s]\n", s_read->ident);
+                    fprintf(file, "\tpush rax\n");
+                }
             }
             break;
         }
         case T_MEMBER_ACCESS: {
-            Node *base = node->firstChild;
-            Node *field_node = base ? base->nextSibling : NULL;
-            if (base && field_node && base->label == T_IDENT) {
-                Symbol *s = search_value(base->ident, local_table);
-                if (s) {
-                    const char *stype = get_var_struct_type(base->ident);
-                    if (stype) {
-                        int fidx = find_field_index(stype, field_node->ident);
-                        if (fidx >= 0) {
-                            fprintf(file, "\tmov rax, [rbp%+d]\n", s->deplct - fidx * 8);
-                            fprintf(file, "\tpush rax\n");
-                        }
+            Symbol *base_sym = NULL; int is_global = 0;
+            int flat_slot = get_member_flat_slot(node, &base_sym, &is_global);
+            if (flat_slot >= 0 && base_sym) {
+                const char *field_stype = get_node_struct_type(node);
+                int field_nf = field_stype ? get_struct_num_fields(field_stype) : 1;
+                for (int fi = 0; fi < field_nf; fi++) {
+                    int slot = flat_slot + fi;
+                    if (!is_global) {
+                        fprintf(file, "\tmov rax, [rbp%+d]\n", base_sym->deplct - slot * 8);
+                    } else {
+                        if (slot == 0)
+                            fprintf(file, "\tmov rax, [%s]\n", base_sym->ident);
+                        else
+                            fprintf(file, "\tmov rax, [%s + %d]\n", base_sym->ident, slot * 8);
                     }
-                } else {
-                    s = search_value(base->ident, global_table);
-                    if (s) {
-                        const char *stype = get_var_struct_type(base->ident);
-                        if (stype) {
-                            int fidx = find_field_index(stype, field_node->ident);
-                            if (fidx >= 0) {
-                                fprintf(file, "\tmov rax, [%s + %d]\n", s->ident, fidx * 8);
-                                fprintf(file, "\tpush rax\n");
-                            }
-                        }
-                    }
+                    fprintf(file, "\tpush rax\n");
                 }
             }
             break;
@@ -305,16 +361,35 @@ static void write_asm_expr(FILE * file, Node * node){
             if (args_list != NULL && args_list->label == T_LIST) {
                 for (Node *arg = args_list->firstChild; arg != NULL; arg = arg->nextSibling) {
                     write_asm_expr(file, arg);
-                    arg_count++;
+                    /* compter les slots réels (N pour un struct à N champs) */
+                    const char *astype = get_node_struct_type(arg);
+                    if (astype)
+                        arg_count += get_struct_num_fields(astype);
+                    else
+                        arg_count++;
                 }
             }
             const char* regs[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
             for (int i = arg_count - 1; i >= 0; i--) {
-                fprintf(file, "\tpop %s\n", regs[i]);
+                if (i < 6)
+                    fprintf(file, "\tpop %s\n", regs[i]);
+                else
+                    fprintf(file, "\tpop rax\n");  /* discard excess args */
             }
-            fprintf(file, "\tand rsp, -16\n");
             fprintf(file, "\tcall %s\n", func_name);
-            fprintf(file, "\tpush rax\n");
+            {
+                const char *ret_stype = get_func_ret_struct(func_name);
+                if (ret_stype) {
+                    int nf = get_struct_num_fields(ret_stype);
+                    /* push in order: rax (field0), rdx (field1), rcx (field2), ... */
+                    const char *ret_regs[] = {"rax", "rdx", "rcx", "r8", "r9"};
+                    if (nf > 5) nf = 5;
+                    for (int ri = 0; ri < nf; ri++)
+                        fprintf(file, "\tpush %s\n", ret_regs[ri]);
+                } else {
+                    fprintf(file, "\tpush rax\n");
+                }
+            }
             break;
         }
         default:
@@ -437,54 +512,83 @@ static void write_asm_instr(FILE * file, Node * node){
             write_asm_expr(file, node->firstChild->nextSibling);
             Node *var_node = node->firstChild;
             if (var_node->label == T_IDENT) {
-                fprintf(file, "\tpop rax\n");
-                Symbol *s_local = search_value(var_node->ident, local_table);
-                if (s_local != NULL) {
-                    fprintf(file, "\tmov [rbp%+d], rax\n", s_local->deplct);
+                const char *lstype = get_var_struct_type(var_node->ident);
+                if (lstype) {
+                    int nf = get_struct_num_fields(lstype);
+                    Symbol *sl = search_value(var_node->ident, local_table);
+                    Symbol *sg = sl ? NULL : search_value(var_node->ident, global_table);
+                    /* les champs sont empilés dans l'ordre 0..nf-1, on dépile nf-1..0 */
+                    for (int fi = nf - 1; fi >= 0; fi--) {
+                        fprintf(file, "\tpop rax\n");
+                        if (sl)
+                            fprintf(file, "\tmov [rbp%+d], rax\n", sl->deplct - fi * 8);
+                        else if (sg) {
+                            if (fi == 0)
+                                fprintf(file, "\tmov [%s], rax\n", sg->ident);
+                            else
+                                fprintf(file, "\tmov [%s + %d], rax\n", sg->ident, fi * 8);
+                        }
+                    }
                 } else {
-                    Symbol *s_global = search_value(var_node->ident, global_table);
-                    if (s_global != NULL) {
-                        fprintf(file, "\tmov [%s], rax\n", s_global->ident);
+                    fprintf(file, "\tpop rax\n");
+                    Symbol *s_local = search_value(var_node->ident, local_table);
+                    if (s_local != NULL) {
+                        fprintf(file, "\tmov [rbp%+d], rax\n", s_local->deplct);
+                    } else {
+                        Symbol *s_global = search_value(var_node->ident, global_table);
+                        if (s_global != NULL) {
+                            fprintf(file, "\tmov [%s], rax\n", s_global->ident);
+                        }
                     }
                 }
             } else if (var_node->label == T_MEMBER_ACCESS) {
-                Node *base = var_node->firstChild;
-                Node *field_node = base ? base->nextSibling : NULL;
-                if (base && field_node && base->label == T_IDENT) {
-                    fprintf(file, "\tpop rax\n");
-                    Symbol *s = search_value(base->ident, local_table);
-                    if (s) {
-                        const char *stype = get_var_struct_type(base->ident);
-                        if (stype) {
-                            int fidx = find_field_index(stype, field_node->ident);
-                            if (fidx >= 0)
-                                fprintf(file, "\tmov [rbp%+d], rax\n", s->deplct - fidx * 8);
-                        }
-                    } else {
-                        s = search_value(base->ident, global_table);
-                        if (s) {
-                            const char *stype = get_var_struct_type(base->ident);
-                            if (stype) {
-                                int fidx = find_field_index(stype, field_node->ident);
-                                if (fidx >= 0)
-                                    fprintf(file, "\tmov [%s + %d], rax\n", s->ident, fidx * 8);
-                            }
+                Symbol *base_sym = NULL; int is_global = 0;
+                int flat_slot = get_member_flat_slot(var_node, &base_sym, &is_global);
+                if (flat_slot >= 0 && base_sym) {
+                    const char *field_stype = get_node_struct_type(var_node);
+                    int field_nf = field_stype ? get_struct_num_fields(field_stype) : 1;
+                    for (int fi = field_nf - 1; fi >= 0; fi--) {
+                        fprintf(file, "\tpop rax\n");
+                        int slot = flat_slot + fi;
+                        if (!is_global) {
+                            fprintf(file, "\tmov [rbp%+d], rax\n", base_sym->deplct - slot * 8);
+                        } else {
+                            if (slot == 0)
+                                fprintf(file, "\tmov [%s], rax\n", base_sym->ident);
+                            else
+                                fprintf(file, "\tmov [%s + %d], rax\n", base_sym->ident, slot * 8);
                         }
                     }
                 }
             }
             break;
         }
-        case T_FCALL:
-
+        case T_FCALL: {
             write_asm_expr(file, node);
-
-            fprintf(file, "\tpop rax\n"); 
+            const char *fcall_fname = node->firstChild ? node->firstChild->ident : NULL;
+            const char *fcall_ret_stype = fcall_fname ? get_func_ret_struct(fcall_fname) : NULL;
+            if (fcall_ret_stype) {
+                int nf = get_struct_num_fields(fcall_ret_stype);
+                for (int fi = 0; fi < nf; fi++) fprintf(file, "\tpop rax\n");
+            } else {
+                fprintf(file, "\tpop rax\n");
+            }
             break;
+        }
         case T_RETURN:
             if (node->firstChild != NULL) {
                 write_asm_expr(file, node->firstChild);
-                fprintf(file, "\tpop rax\n");
+                if (current_func_returns_struct && current_func_return_struct_type[0]) {
+                    int nf = get_struct_num_fields(current_func_return_struct_type);
+                    /* stack: field0 ... field(nf-1)  ← top */
+                    /* ret regs: rax=field0, rdx=field1, rcx=field2, r8=field3, r9=field4 */
+                    const char *ret_regs[] = {"rax", "rdx", "rcx", "r8", "r9"};
+                    if (nf > 5) nf = 5;
+                    for (int ri = nf - 1; ri >= 0; ri--)
+                        fprintf(file, "\tpop %s\n", ret_regs[ri]);
+                } else {
+                    fprintf(file, "\tpop rax\n");
+                }
             }
             fprintf(file, "\tmov rsp, rbp\n");
             fprintf(file, "\tpop rbp\n");
@@ -588,7 +692,7 @@ void sem(Node *node) {
                 }
             }
 
-            fprintf(nasm_output, "section .text\nglobal _start\n_start:\n");
+            fprintf(nasm_output, "DEFAULT REL\nsection .text\nglobal _start\n_start:\n");
             fprintf(nasm_output, "\tcall main\n");
             fprintf(nasm_output, "\tmov rdi, rax\n");
             fprintf(nasm_output, "\tmov rax, 60\n");
@@ -616,6 +720,11 @@ void sem(Node *node) {
                 current_func_is_void = (fsi != NULL && fsi->deplct % 2 == 1);
                 Node *ret_type = node->firstChild->firstChild;
                 current_func_returns_struct = (ret_type != NULL && ret_type->label == T_TYPE_STRUCT);
+                current_func_return_struct_type[0] = '\0';
+                if (current_func_returns_struct && ret_type->firstChild) {
+                    strncpy(current_func_return_struct_type, ret_type->firstChild->ident, 63);
+                    register_func_ret_struct(func_name, ret_type->firstChild->ident);
+                }
                 var_types_at_func_start = var_types;
             }
 
@@ -628,13 +737,21 @@ void sem(Node *node) {
             if (alloc > 0) {
                 fprintf(nasm_output, "\tsub rsp, %d\n", alloc);
             }
-            Node *param_list = node->firstChild->firstChild->nextSibling->nextSibling; 
+            Node *param_list = node->firstChild->firstChild->nextSibling->nextSibling;
             if (param_list != NULL && param_list->label == T_LIST) {
                 const char* regs[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
                 int param_idx = 0;
                 for (Node *p = param_list->firstChild; p != NULL; p = p->nextSibling) {
-                    fprintf(nasm_output, "\tmov [rbp-%d], %s\n", (param_idx + 1) * 8, regs[param_idx]);
-                    param_idx++;
+                    Node *ptype = p->firstChild;
+                    int nf = 1;
+                    if (ptype && ptype->label == T_TYPE_STRUCT && ptype->firstChild) {
+                        int n = get_struct_num_fields(ptype->firstChild->ident);
+                        if (n > 0) nf = n;
+                    }
+                    for (int fi = 0; fi < nf && param_idx < 6; fi++) {
+                        fprintf(nasm_output, "\tmov [rbp-%d], %s\n", (param_idx + 1) * 8, regs[param_idx]);
+                        param_idx++;
+                    }
                 }
             }
 
@@ -727,7 +844,12 @@ void sem(Node *node) {
                     if (type_node != NULL && type_node->label == T_TYPE_STRUCT && type_node->firstChild != NULL)
                         register_var_struct_type(var_node->ident, type_node->firstChild->ident);
                 }
-                current_offset -= 8;
+                if (type_node != NULL && type_node->label == T_TYPE_STRUCT && type_node->firstChild != NULL) {
+                    int nf = get_struct_num_fields(type_node->firstChild->ident);
+                    current_offset -= (nf > 0 ? nf : 1) * 8;
+                } else {
+                    current_offset -= 8;
+                }
             }
             break;
         }

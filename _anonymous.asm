@@ -1,3 +1,4 @@
+DEFAULT REL
 section .text
 global _start
 _start:
@@ -153,16 +154,49 @@ main:
 	push rbp
 	mov rbp, rsp
 	sub rsp, 16
-	;mise sur la pile du nombre '200'
-	push 200
-	pop rax
-	mov [rbp-16], rax
-	mov rax, [rbp-16]
-	push rax
+	;mise sur la pile du nombre '0'
+	push 0
 	pop rax
 	mov [rbp-8], rax
 	;mise sur la pile du nombre '0'
 	push 0
+	pop rax
+	mov [rbp-16], rax
+.L1:
+	mov rax, [rbp-8]
+	push rax
+	;mise sur la pile du nombre '5'
+	push 5
+	pop r10
+	pop rax
+	cmp rax, r10
+	jl .L2
+	jmp .L3
+.L2:
+	mov rax, [rbp-16]
+	push rax
+	mov rax, [rbp-8]
+	push rax
+	pop r10
+	pop rax
+	add rax, r10
+	push rax
+	pop rax
+	mov [rbp-16], rax
+	mov rax, [rbp-8]
+	push rax
+	;mise sur la pile du nombre '1'
+	push 1
+	pop r10
+	pop rax
+	add rax, r10
+	push rax
+	pop rax
+	mov [rbp-8], rax
+	jmp .L1
+.L3:
+	mov rax, [rbp-16]
+	push rax
 	pop rax
 	mov rsp, rbp
 	pop rbp

@@ -15,7 +15,7 @@ void register_struct_def(const char *struct_name, Node *field_list_node) {
     sd->fields = NULL;
     sd->num_fields = 0;
 
-    int idx = 0;
+    int flat_idx = 0;  /* cumulative flat 8-byte slot index */
     if (field_list_node != NULL) {
         for (Node *dv = field_list_node->firstChild; dv != NULL; dv = dv->nextSibling) {
             if (dv->label != T_DECL_VARS) continue;
@@ -25,17 +25,21 @@ void register_struct_def(const char *struct_name, Node *field_list_node) {
             Node *decl_list = type_node ? type_node->nextSibling : NULL;
             if (!decl_list) continue;
             char field_stype[64] = "";
-            if (type_node && type_node->label == T_TYPE_STRUCT && type_node->firstChild)
+            int field_slots = 1;
+            if (type_node && type_node->label == T_TYPE_STRUCT && type_node->firstChild) {
                 strncpy(field_stype, type_node->firstChild->ident, 63);
+                int n = get_struct_num_fields(field_stype);
+                if (n > 0) field_slots = n;
+            }
             for (Node *id = decl_list->firstChild; id != NULL; id = id->nextSibling) {
                 if (id->label != T_IDENT) continue;
                 FieldDef *fd = malloc(sizeof(FieldDef));
                 strncpy(fd->name, id->ident, 63); fd->name[63] = '\0';
-                fd->index = idx++;
+                fd->index = flat_idx;
                 strncpy(fd->struct_type, field_stype, 63); fd->struct_type[63] = '\0';
                 fd->next = sd->fields;
                 sd->fields = fd;
-                sd->num_fields++;
+                flat_idx += field_slots;
             }
         }
     }
@@ -44,6 +48,7 @@ void register_struct_def(const char *struct_name, Node *field_list_node) {
     while (curr) { nxt = curr->next; curr->next = prev; prev = curr; curr = nxt; }
     sd->fields = prev;
 
+    sd->num_fields = flat_idx;  /* total flat 8-byte slots */
     sd->next = struct_defs;
     struct_defs = sd;
 }
