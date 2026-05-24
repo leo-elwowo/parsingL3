@@ -1981,7 +1981,11 @@ int main(int argc, char **argv) {
         }
         sem(root);
         fclose(nasm_output);
-        return (nberror_sem > 0) ? 2 : 0; // si on a eu au moins une erreur semantique on met 2 sinon 0
+        if (nberror_sem > 0) {
+            remove("./_anonymous.asm");
+            return 2;
+        }
+        return 0;
     }
     return 1 + nberror;
 }

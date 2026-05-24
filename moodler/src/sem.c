@@ -552,9 +552,15 @@ void sem(Node *node) {
                             if (plist != NULL && plist->label == T_LIST)
                                 for (Node *p = plist->firstChild; p; p = p->nextSibling)
                                     if (p->label == T_PARAM) param_count++;
-                            if (strcmp(name_node->ident, "main") == 0 && is_void) {
-                                nberror_sem++;
-                                fprintf(stderr, "Erreur sémantique : 'main' doit retourner int\n");
+                            if (strcmp(name_node->ident, "main") == 0) {
+                                if (is_void) {
+                                    nberror_sem++;
+                                    fprintf(stderr, "Erreur sémantique : 'main' doit retourner int\n");
+                                }
+                                if (param_count > 0) {
+                                    nberror_sem++;
+                                    fprintf(stderr, "Erreur sémantique : 'main' ne doit prendre aucun argument\n");
+                                }
                             }
                             insert_value(name_node->ident, TYPE_INT, param_count * 2 + is_void, function_table);
                         }
@@ -725,8 +731,10 @@ void sem(Node *node) {
             Node *base  = node->firstChild;
             Node *field = base ? base->nextSibling : NULL;
             if (base) sem(base);
-            if (base && field && base->label == T_IDENT) {
-                const char *stype = get_var_struct_type(base->ident);
+            if (base && field) {
+                const char *stype = NULL;
+                if (base->label == T_IDENT)
+                    stype = get_var_struct_type(base->ident);
                 if (stype) {
                     if (find_field_index(stype, field->ident) < 0) {
                         nberror_sem++;
@@ -734,13 +742,9 @@ void sem(Node *node) {
                                 field->ident, stype, node->lineno);
                     }
                 } else {
-                    Symbol *s = search_value(base->ident, local_table);
-                    if (!s) s = search_value(base->ident, global_table);
-                    if (s) {
-                        nberror_sem++;
-                        fprintf(stderr, "Erreur sémantique : '%s' n'est pas de type struct (ligne %d)\n",
-                                base->ident, node->lineno);
-                    }
+                    nberror_sem++;
+                    fprintf(stderr, "Erreur sémantique : la base de l'accès membre n'est pas de type struct (ligne %d)\n",
+                            node->lineno);
                 }
             }
             break;
@@ -841,11 +845,14 @@ void sem(Node *node) {
         }
         case T_RETURN:
             if (node->firstChild) check_expr_for_void_fcall(node->firstChild);
-            
+
             if (node->firstChild && current_func_is_void) {
                 nberror_sem++;
                 fprintf(stderr, "Erreur sémantique : return avec valeur dans fonction void (ligne %d)\n", node->lineno);
-            } else if (is_node_struct(node->firstChild)) { // <--- VÉRIFICATION ICI
+            } else if (!node->firstChild && !current_func_is_void) {
+                nberror_sem++;
+                fprintf(stderr, "Erreur sémantique : return sans valeur dans fonction non-void (ligne %d)\n", node->lineno);
+            } else if (is_node_struct(node->firstChild)) {
                 nberror_sem++;
                 fprintf(stderr, "Erreur sémantique : impossible de retourner une struct (ligne %d)\n", node->lineno);
             }
@@ -861,17 +868,21 @@ void sem(Node *node) {
                 }
             }
             break;
+        case T_NOT:
         case T_ADDSUB:
         case T_DIVSTAR:
         case T_EQ:
         case T_ORDER:
         case T_AND:
-        case T_OR:
-            if (is_node_struct(node->firstChild) || is_node_struct(node->firstChild->nextSibling)) {
+        case T_OR: {
+            Node *op_lhs = node->firstChild;
+            Node *op_rhs = op_lhs ? op_lhs->nextSibling : NULL;
+            if (is_node_struct(op_lhs) || is_node_struct(op_rhs)) {
                 nberror_sem++;
                 fprintf(stderr, "Erreur sémantique : opération arithmétique/logique interdite sur une struct (ligne %d)\n", node->lineno);
             }
             break;
+        }
         case T_ASSIGN:
 
             //fprintf(stderr, "assigning %s to %s (%s <-- %s)\n", node->firstChild->ident, node->firstChild->nextSibling->ident, node->firstChild->ident, node->firstChild->nextSibling->ident);    
